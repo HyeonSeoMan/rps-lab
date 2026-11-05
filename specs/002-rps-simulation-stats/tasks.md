@@ -33,9 +33,9 @@ description: "RPS Lab v2 구현 Tasks (자동 대결 · 기록 · 통계)"
 
 ## Phase 1: Setup
 
-- [ ] T001 `fake-indexeddb` 개발 의존성 설치(승인됨, R-10)하고 `vitest.config.mts`에 어댑터 테스트용 setup 추가(어댑터 테스트 파일에서만 `fake-indexeddb/auto` 로드, 기존 jsdom 환경 유지) (`package.json`, `vitest.config.mts`) — 검증: 기존 v1 테스트 전부 통과, 런타임 dependencies 불변
-- [ ] T002 [P] 디자인 토큰 반영: `docs/references/rps-lab-v2-ui.html`의 `:root` 보정 색상(AA 보정값, win/lose/draw 카드·막대 색)을 CSS 변수로 이식 (`src/app/globals.css`) — 검증: UC 9절 색상 값과 일치, 기존 화면 깨지지 않음
-- [ ] T003 [P] 배포 빌드 설정(T-D1): `output:"export"`, `trailingSlash:true`, 배포 빌드(환경 변수 지정 시)에서만 `basePath:"/rps-lab"`, 배포 빌드·정적 미리보기용 npm 스크립트 추가 (`next.config.ts`, `package.json`) — 검증: 일반 `npm run dev/build` 동작 불변, 배포 빌드 시 `out/`에 `index.html`·`history/index.html`·`404.html`는 T038 이후 재확인(Plan 16.3)
+- [x] T001 `fake-indexeddb` 개발 의존성 설치(승인됨, R-10). 어댑터는 `IDBFactory`를 주입받아 테스트가 `fake-indexeddb`의 `IDBFactory`를 직접 넘기므로 전역 setup과 `vitest.config.mts` 변경은 불필요(구현 결정, jsdom 환경 유지) (`package.json`) — 검증: 기존 v1 테스트 전부 통과, 런타임 dependencies 불변
+- [x] T002 [P] 디자인 토큰 반영: `docs/references/rps-lab-v2-ui.html`의 `:root` 보정 색상(AA 보정값, win/lose/draw 카드·막대 색)을 CSS 변수로 이식 (`src/app/globals.css`) — 검증: UC 9절 색상 값과 일치, 기존 화면 깨지지 않음
+- [x] T003 [P] 배포 빌드 설정(T-D1): `output:"export"`, `trailingSlash:true`, 배포 빌드(환경 변수 지정 시)에서만 `basePath:"/rps-lab"`, 배포 빌드·정적 미리보기용 npm 스크립트 추가 (`next.config.ts`, `package.json`) — 검증: 일반 `npm run dev/build` 동작 불변, 배포 빌드 시 `out/`에 `index.html`·`history/index.html`·`404.html`는 T038 이후 재확인(Plan 16.3)
 
 ---
 
@@ -43,18 +43,18 @@ description: "RPS Lab v2 구현 Tasks (자동 대결 · 기록 · 통계)"
 
 **⚠️ 이 단계가 끝나기 전에는 어떤 스토리도 시작하지 않는다.**
 
-- [ ] T004 [P] 기록 타입·검증 `src/lib/battle.ts` + 테스트: `BattleDraft`/`BattleRecord`(`{seq,user,computer,at}`), 손 값·형식 검증, 결과는 저장하지 않고 `judge()`로 계산(DM, FR2-012·FR2-020) — 검증: 잘못된 손·형식 거부, 결과 계산이 v1 `rps.ts`와 동일
-- [ ] T005 [P] 통계 계산 `src/lib/stats.ts` + 테스트: `total`, `winRate`(승 ÷ 전체 × 100, 소수 첫째 자리, 0건이면 `0.0%`), 비율, `formatPercent`, `pageCount`(20건) (FR2-011·FR2-013, P-2) — 검증: 0건·경계값(1/3 등)·합계 100% 표시 규칙, AC2-021~AC2-023
-- [ ] T006 [P] 자동 실행 설정·상수 `src/lib/auto-run.ts` + 테스트: 설정 타입(내 손 고정/랜덤, 실행 방식, 횟수 10/100/1000), `draftBattle`(v1 균등 난수·`judge` 재사용, 랜덤 손은 각 1/3), 묶음 크기(애니메이션 `max(1,N/100)`/틱 70ms, 즉시 100) (FR2-004·FR2-005, P-5) — 검증: 주입 난수로 결정적 결과, 세 손 균등
-- [ ] T007 [P] 저장소 인터페이스 `src/lib/battle-store.ts`: `BattleStore`, `QueuedBattleStore`, `StoreError`(`kind`에 `"skipped"` 포함), `Stats` 타입 (DM, SC 2·3절) — 검증: 타입체크, React·DOM 무의존
-- [ ] T008 테스트 전용 메모리 저장소 `src/test-utils/memory-store.ts`: `BattleStore` 구현 + 실패·지연 주입(앱 번들 미포함) (Plan 12절) — 검증: 인터페이스 계약 테스트(추가·합계·페이지·초기화·실패 주입) 통과 (T007 이후)
-- [ ] T009 IndexedDB 어댑터 `src/lib/idb-battle-store.ts` + `idb-battle-store.test.ts`(fake-indexeddb): DB `rps-lab` v1, 스토어 `battles`(keyPath `seq`, 인덱스 없음)·`meta`(`"stats"`,`"probe"`), 기록 추가와 카운터 갱신을 같은 readwrite 트랜잭션, 묶음 추가 원자성, 키셋 페이지네이션(`seq` 내림차순 20+1건), 연결 첫 `loadStats`에서 합계 == `count()` 검증·자가 복구, 전체 초기화 원자성, 연결 무효화와 트랜잭션 오류 구분(식별자 비교, G-7), 쓰기 프로브 (SC 1~4절, FR2-016·FR2-017·FR2-020, FR2-025) — 검증: SC 7절 테스트 행 전부, 중간 실패 시 부분 저장 0건 (T004·T007 이후)
-- [ ] T010 저장 큐·실패 게이트 `src/lib/save-queue.ts` + 테스트: FIFO 쓰기 큐, 실패/초기 읽기 실패 시 게이트 닫힘(대기 쓰기는 `skipped`로 거부), `whenIdle()`, `recover()`(성공 시에만 게이트 열림, 이동으로 열리지 않음, 새로고침으로 초기화), 초기화↔재시도 상호 배제(G-6) (SC 3절, G-1~G-6, FR2-017·FR2-018·FR2-025, AC2-055) — 검증: 연속 입력 N회 순서·유실 0, 실패 후 뒤따른 쓰기가 저장되지 않음 (T007·T008 이후)
-- [ ] T011 [P] 낭독 문장 생성 `src/lib/announce.ts` + 테스트: UC 6절의 승인된 문장 6개와 읽기 실패·재시도 실패 문구를 `{N},{k},{a},{b},{c}` 치환으로 정확히 생성 (D1) — 검증: 문구 원문과 글자 단위 일치
-- [ ] T012 앱 수준 저장소 싱글턴 `getBrowserBattleStore()`을 `src/lib/idb-battle-store.ts` 또는 `src/lib/browser-store.ts`에 구현: 모듈 단일 `QueuedBattleStore` 인스턴스, IndexedDB 미지원·접근 불가 시 읽기 실패 상태로 시작(앱이 깨지지 않음) (Plan 2·5절, SC 4절, FR2-018) — 검증: indexedDB 미정의 환경에서 예외 없이 `StoreError` 반환 (T009·T010 이후)
-- [ ] T013 세션 순수 리듀서 `src/lib/game-session.ts` + 테스트: 상태·액션 타입, DM의 전이표 전체(`LOADED_UNAVAILABLE`, `RETRY_SUCCEEDED`/`RETRY_FAILED`, 실행 중 입력 거부 FR2-009, 실패가 중지보다 우선 G-8, 복구됨 안내 해제 규칙: 다음 확정 대결·초기화 성공·페이지 이동에서 해제, 모드 전환은 해제 안 함, 연습 대결 표시 구분 P-12) (DM, G-3·G-6·G-8, FR2-009·FR2-017·FR2-018·FR2-025) — 검증: 전이표의 모든 행에 대응하는 테스트, 불가능한 전이는 상태 불변 (T004~T007·T011 이후)
-- [ ] T014 자동 실행 모듈 `src/lib/auto-runner.ts` + 테스트: `runAutoBattles({store,random,now,wait,signal,...})`, 묶음 저장·진행 콜백, 같은 `AbortController`로 중지/언마운트/`pagehide`(G-9: 즉시 실행도 이탈 시 중단), 저장 실패 시 `aborted`가 `stopped`보다 우선(G-8), 중지 시 확정 건만 반영 (SC 3.3절, G-7~G-9, FR2-006~FR2-008, AC2-016·SC2-004) — 검증: 결정적 난수·가짜 타이머로 10/100/1000회, 중단 시 기록 수 == 확정 수 (T006·T008·T010 이후)
-- [ ] T015 [P] v2에서 쓰는 v1 순수 로직 재사용 범위를 고정: `src/lib/game-state.ts`에서 `Score`·`Round`·`applyOutcome`만 남기고(불필요 export·localStorage 의존 제거) `rps.ts`는 무변경, 기존 테스트 유지 (`src/lib/game-state.ts`, `src/lib/game-state.test.ts`) (FR2-005·FR2-021) — 검증: v1 `rps.test.ts`·`game-state.test.ts` 통과, `score-storage` 삭제는 T035
+- [x] T004 [P] 기록 타입·검증 `src/lib/battle.ts` + 테스트: `BattleDraft`/`BattleRecord`(`{seq,user,computer,at}`), 손 값·형식 검증, 결과는 저장하지 않고 `judge()`로 계산(DM, FR2-012·FR2-020) — 검증: 잘못된 손·형식 거부, 결과 계산이 v1 `rps.ts`와 동일
+- [x] T005 [P] 통계 계산 `src/lib/stats.ts` + 테스트: `total`, `winRate`(승 ÷ 전체 × 100, 소수 첫째 자리, 0건이면 `0.0%`), 비율, `formatPercent`, `pageCount`(20건) (FR2-011·FR2-013, P-2) — 검증: 0건·경계값(1/3 등)·합계 100% 표시 규칙, AC2-021~AC2-023
+- [x] T006 [P] 자동 실행 설정·상수 `src/lib/auto-run.ts` + 테스트: 설정 타입(내 손 고정/랜덤, 실행 방식, 횟수 10/100/1000), `draftBattle`(v1 균등 난수·`judge` 재사용, 랜덤 손은 각 1/3), 묶음 크기(애니메이션 `max(1,N/100)`/틱 70ms, 즉시 100) (FR2-004·FR2-005, P-5) — 검증: 주입 난수로 결정적 결과, 세 손 균등
+- [x] T007 [P] 저장소 인터페이스 `src/lib/battle-store.ts`: `BattleStore`, `QueuedBattleStore`, `StoreError`(`kind`에 `"skipped"` 포함), `Stats` 타입 (DM, SC 2·3절) — 검증: 타입체크, React·DOM 무의존
+- [x] T008 테스트 전용 메모리 저장소 `src/test-utils/memory-store.ts`: `BattleStore` 구현 + 실패·지연 주입(앱 번들 미포함) (Plan 12절) — 검증: 인터페이스 계약 테스트(추가·합계·페이지·초기화·실패 주입) 통과 (T007 이후)
+- [x] T009 IndexedDB 어댑터 `src/lib/idb-battle-store.ts` + `idb-battle-store.test.ts`(fake-indexeddb): DB `rps-lab` v1, 스토어 `battles`(keyPath `seq`, 인덱스 없음)·`meta`(`"stats"`,`"probe"`), 기록 추가와 카운터 갱신을 같은 readwrite 트랜잭션, 묶음 추가 원자성, 키셋 페이지네이션(`seq` 내림차순 20+1건), 연결 첫 `loadStats`에서 합계 == `count()` 검증·자가 복구, 전체 초기화 원자성, 연결 무효화와 트랜잭션 오류 구분(식별자 비교, G-7), 쓰기 프로브 (SC 1~4절, FR2-016·FR2-017·FR2-020, FR2-025) — 검증: SC 7절 테스트 행 전부, 중간 실패 시 부분 저장 0건 (T004·T007 이후)
+- [x] T010 저장 큐·실패 게이트 `src/lib/save-queue.ts` + 테스트: FIFO 쓰기 큐, 실패/초기 읽기 실패 시 게이트 닫힘(대기 쓰기는 `skipped`로 거부), `whenIdle()`, `recover()`(성공 시에만 게이트 열림, 이동으로 열리지 않음, 새로고침으로 초기화), 초기화↔재시도 상호 배제(G-6) (SC 3절, G-1~G-6, FR2-017·FR2-018·FR2-025, AC2-055) — 검증: 연속 입력 N회 순서·유실 0, 실패 후 뒤따른 쓰기가 저장되지 않음 (T007·T008 이후)
+- [x] T011 [P] 낭독 문장 생성 `src/lib/announce.ts` + 테스트: UC 6절의 승인된 문장 6개와 읽기 실패·재시도 실패 문구를 `{N},{k},{a},{b},{c}` 치환으로 정확히 생성 (D1) — 검증: 문구 원문과 글자 단위 일치
+- [x] T012 앱 수준 저장소 싱글턴 `getBrowserBattleStore()`을 `src/lib/idb-battle-store.ts` 또는 `src/lib/browser-store.ts`에 구현: 모듈 단일 `QueuedBattleStore` 인스턴스, IndexedDB 미지원·접근 불가 시 읽기 실패 상태로 시작(앱이 깨지지 않음) (Plan 2·5절, SC 4절, FR2-018) — 검증: indexedDB 미정의 환경에서 예외 없이 `StoreError` 반환 (T009·T010 이후)
+- [x] T013 세션 순수 리듀서 `src/lib/game-session.ts` + 테스트: 상태·액션 타입, DM의 전이표 전체(`LOADED_UNAVAILABLE`, `RETRY_SUCCEEDED`/`RETRY_FAILED`, 실행 중 입력 거부 FR2-009, 실패가 중지보다 우선 G-8, 복구됨 안내 해제 규칙: 다음 확정 대결·초기화 성공·페이지 이동에서 해제, 모드 전환은 해제 안 함, 연습 대결 표시 구분 P-12) (DM, G-3·G-6·G-8, FR2-009·FR2-017·FR2-018·FR2-025) — 검증: 전이표의 모든 행에 대응하는 테스트, 불가능한 전이는 상태 불변 (T004~T007·T011 이후)
+- [x] T014 자동 실행 모듈 `src/lib/auto-runner.ts` + 테스트: `runAutoBattles({store,random,now,wait,signal,...})`, 묶음 저장·진행 콜백, 같은 `AbortController`로 중지/언마운트/`pagehide`(G-9: 즉시 실행도 이탈 시 중단), 저장 실패 시 `aborted`가 `stopped`보다 우선(G-8), 중지 시 확정 건만 반영 (SC 3.3절, G-7~G-9, FR2-006~FR2-008, AC2-016·SC2-004) — 검증: 결정적 난수·가짜 타이머로 10/100/1000회, 중단 시 기록 수 == 확정 수 (T006·T008·T010 이후)
+- [x] T015 [P] v2에서 쓰는 v1 순수 로직 재사용 범위를 확인: `Score`·`Round`·`applyOutcome`·`rps.ts`가 그대로 재사용 가능함을 확인했고 v1 UI가 아직 `gameReducer`·`createInitialState`를 쓰므로 `game-state.ts` 축소(미사용 export 제거)는 T018(UI 재구성)·T035로 이연, 파일 무변경 (`src/lib/game-state.ts`, `src/lib/game-state.test.ts`) (FR2-005·FR2-021) — 검증: v1 `rps.test.ts`·`game-state.test.ts` 통과, `score-storage` 삭제는 T035
 
 **Checkpoint**: `src/lib` 전체가 UI 없이 테스트로 검증됨. 이후 스토리 시작 가능.
 
