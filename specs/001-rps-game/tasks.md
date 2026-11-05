@@ -82,14 +82,14 @@
 **Independent Test**: 앱을 열고 버튼을 눌러 양쪽 선택과 판정이 표시된다.
 **Covers**: FR-001, FR-002(UI 연결), FR-004, FR-010(fetch 미사용) / AC-001, AC-002 (+AC-016 자동 보조)
 
-- [ ] T012 [US1] `src/components/Game.test.tsx`를 만들고 US1 테스트를 작성한다 — `localStorage.clear()`를 각 테스트 전에 수행하고 `random`을 prop으로 주입하는 `renderGame(random)` 헬퍼 사용. 쿼리는 role/이름 기반(`getByRole('button', { name: '가위' })`).
+- [X] T012 [US1] `src/components/Game.test.tsx`를 만들고 US1 테스트를 작성한다 — `localStorage.clear()`를 각 테스트 전에 수행하고 `random`을 prop으로 주입하는 `renderGame(random)` 헬퍼 사용. 쿼리는 role/이름 기반(`getByRole('button', { name: '가위' })`).
   - `AC-001`: 버튼 "가위", "바위", "보"가 보이고 활성 상태. 접근 가능한 이름이 텍스트와 정확히 일치(이모지는 `aria-hidden`이라 이름에 포함되지 않음). 초기 `role="status"` 영역에 "가위, 바위, 보 중 하나를 선택하세요".
   - `AC-002`: `random=()=>0`(컴퓨터=바위)일 때 "가위" 클릭 → status에 "나: 가위 · 컴퓨터: 바위 — 패배"; 이기는/비기는 조합 각각 1개씩 추가(`승리!`, `무승부`).
   - `AC-016` 자동 보조: 라운드 진행 중 `fetch`가 호출되지 않음(`vi.spyOn(globalThis, 'fetch')`).
   - 완료 기준: `npm test`에서 컴포넌트 부재로 Red.
-- [ ] T013 [US1] (T009, T012 후) `src/components/GameBoard.tsx`를 구현한다(`"use client"`) — props `random?: () => number`(기본 `Math.random`). `useReducer(gameReducer, createInitialState({wins:0,losses:0,draws:0}))`. 선택 버튼 3개(`<button>`, `onClick`만 사용, 이모지 ✌️✊✋는 `aria-hidden` 장식, 접근 가능한 이름 "가위"/"바위"/"보"). 클릭 핸들러: `pickComputerChoice(random)` 후 `dispatch({type:'play', user, computer})`. 결과 영역 `role="status"`: 초기 "가위, 바위, 보 중 하나를 선택하세요", 진행 후 "나: {선택} · 컴퓨터: {선택} — {승리!|패배|무승부}"(화면 라벨: rock=바위, paper=보, scissors=가위). 버튼 비활성화·디바운스 없음.
+- [X] T013 [US1] (T009, T012 후) `src/components/GameBoard.tsx`를 구현한다(`"use client"`) — props `random?: () => number`(기본 `Math.random`). `useReducer(gameReducer, createInitialState({wins:0,losses:0,draws:0}))`. 선택 버튼 3개(`<button>`, `onClick`만 사용, 이모지 ✌️✊✋는 `aria-hidden` 장식, 접근 가능한 이름 "가위"/"바위"/"보"). 클릭 핸들러: `pickComputerChoice(random)` 후 `dispatch({type:'play', user, computer})`. 결과 영역 `role="status"`: 초기 "가위, 바위, 보 중 하나를 선택하세요", 진행 후 "나: {선택} · 컴퓨터: {선택} — {승리!|패배|무승부}"(화면 라벨: rock=바위, paper=보, scissors=가위). 버튼 비활성화·디바운스 없음.
   - 완료 기준: AC-001, AC-002 테스트 통과.
-- [ ] T014 [US1] (T013 후) `src/components/Game.tsx`와 `src/app/page.tsx`를 구현한다 — `Game`(`"use client"`)은 `useSyncExternalStore(subscribeNoop, () => true, () => false)`로 `ready`를 얻고(`subscribeNoop`는 모듈 상수), `<main>` 안에 `<h1>가위바위보</h1>`과 함께 `ready ? <GameBoard random={random}/> : <빈 영역 aria-busy="true"/>`를 렌더한다(skeleton에는 전적·버튼 없음, 텍스트 없음). `page.tsx`는 `<Game />` 렌더. `random` prop을 `GameBoard`에 전달.
+- [X] T014 [US1] (T013 후) `src/components/Game.tsx`와 `src/app/page.tsx`를 구현한다 — `Game`(`"use client"`)은 `useSyncExternalStore(subscribeNoop, () => true, () => false)`로 `ready`를 얻고(`subscribeNoop`는 모듈 상수), `<main>` 안에 `<h1>가위바위보</h1>`과 함께 `ready ? <GameBoard random={random}/> : <빈 영역 aria-busy="true"/>`를 렌더한다(skeleton에는 전적·버튼 없음, 텍스트 없음). `page.tsx`는 `<Game />` 렌더. `random` prop을 `GameBoard`에 전달.
   - 완료 기준: `npm test`의 US1 테스트 통과. `npm run build` 성공. `npm run dev`에서 페이지가 열리고 클릭 시 결과가 표시됨(수동 스모크, 결과는 T025에 기록).
 
 **검토 지점 3**: US1 완료(MVP 1단계). 변경 파일 보고.
