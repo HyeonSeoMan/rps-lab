@@ -220,3 +220,58 @@ describe("IndexedDB 어댑터 — 다중 연결과 연결 관리", () => {
   });
 });
 
+
+describe("IndexedDB 어댑터 — 연결 무효화와 재시도 (다중 탭, P-9)", () => {
+  it("다른 탭이 DB를 삭제하면(versionchange) 진행 중이던 요청은 끝까지 커밋되고 다음 요청은 새 연결로 동작한다", async () => {
+    const f = fresh();
+    const s = open(f);
+    await s.recordBattles([draft("rock", "rock")]);
+    const inFlight = s.recordBattles([draft("rock", "scissors")]); // 진행 중
+    const deleted = new Promise<void>((res, rej) => {
+      const r = f.deleteDatabase(DB_NAME);
+      r.onsuccess = () => res();
+      r.onerror = () => rej(r.error);
+    });
+    await expect(inFlight).resolves.toBeDefined(); // 진행 중인 요청은 스스로 끝난다
+    await deleted;
+    // 다음 요청은 무효화된 연결을 버리고 새로 연다(비어 있는 새 DB)
+    expect(await s.loadStats()).toEqual({ wins: 0, losses: 0, draws: 0 });
+    await s.recordBattles([draft("paper", "rock")]);
+    expect((await s.listBattles({ limit: 10 })).items.map((r) => r.seq)).toEqual([1]);
+  });
+
+  it("쓰기 실패 뒤에도 연결은 유지되고 같은 연결로 재시도가 성공한다", async () => {
+    const f = fresh();
+    const s = open(f);
+    const real = IDBObjectStore.prototype.add;
+    let fail = true;
+    vi.spyOn(IDBObjectStore.prototype, "add").mockImplementation(function (this: IDBObjectStore, ...a) {
+      if (fail) throw new DOMException("quota", "QuotaExceededError");
+      return real.apply(this, a as Parameters<typeof real>);
+    });
+    await expect(s.recordBattles([draft("rock", "rock")])).rejects.toMatchObject({ kind: "write" });
+    fail = false;
+    await expect(s.recordBattles([draft("rock", "rock")])).resolves.toEqual({ wins: 0, losses: 0, draws: 1 });
+  });
+
+  it("두 연결의 쓰기·초기화가 섞여도 불변식(합계 == 기록 수, seq 유일)이 유지된다", async () => {
+    const f = fresh();
+    const a = open(f);
+    const b = open(f);
+    await Promise.all([a.loadStats(), b.loadStats()]);
+    const ops: Promise<unknown>[] = [];
+    for (let i = 0; i < 20; i++) {
+      ops.push((i % 2 ? a : b).recordBattles([draft("rock", HANDS_MIX[i % 3]), draft("paper", HANDS_MIX[(i + 1) % 3])]));
+      if (i === 9) ops.push(a.clearAll());
+    }
+    await Promise.all(ops);
+    const stats = await b.loadStats();
+    const { items } = await a.listBattles({ limit: 1000 });
+    expect(stats.wins + stats.losses + stats.draws).toBe(items.length);
+    const seqs = items.map((r) => r.seq).sort((x, y) => x - y);
+    expect(new Set(seqs).size).toBe(seqs.length);
+    expect(seqs).toEqual(Array.from({ length: seqs.length }, (_, i) => i + 1)); // 초기화 뒤 1부터 연속
+  });
+});
+
+const HANDS_MIX = ["rock", "paper", "scissors"] as const;

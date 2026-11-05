@@ -70,7 +70,6 @@ describe("US1: 한 라운드 플레이 (v1 AC 회귀)", () => {
   it("AC-001: 세 선택지가 보이고 선택 가능하며 안내 문장이 있다", async () => {
     await renderGame();
     for (const name of ["가위", "바위", "보"]) expect((button(name) as HTMLButtonElement).disabled).toBe(false);
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("가위바위보");
     expect(status()).toBe(INITIAL_MESSAGE);
   });
 
@@ -130,7 +129,6 @@ describe("복원 게이트 (서버 렌더·하이드레이션)", () => {
   it("서버 렌더 HTML에는 선택 버튼이 없고 제목과 빈 로딩 영역만 있다", () => {
     const html = renderToString(<Game />);
     expect(html).not.toContain("<button");
-    expect(html).toContain("가위바위보");
     expect(html).toContain('aria-busy="true"');
     expect(html).not.toContain(INITIAL_MESSAGE);
     expect(html).not.toContain("누적 전적");
@@ -311,7 +309,7 @@ describe("영속성과 v1 전적 비이전", () => {
 });
 
 describe("US4: 키보드 접근성 (v1 AC-013)", () => {
-  it("세 버튼은 네이티브 button이며 Tab 순서(가위→바위→보)는 모드 토글 뒤에 이어진다", async () => {
+  it("세 버튼은 네이티브 button이며 Tab 순서는 직접→자동→가위→바위→보→전적 초기화이고 Shift+Tab은 역순이다", async () => {
     const user = userEvent.setup();
     await renderGame();
     for (const name of ["가위", "바위", "보"]) {
@@ -328,8 +326,12 @@ describe("US4: 키보드 접근성 (v1 AC-013)", () => {
     expect(document.activeElement).toBe(button("가위"));
     await user.tab();
     expect(document.activeElement).toBe(button("바위"));
+    await user.tab();
+    expect(document.activeElement).toBe(button("보"));
+    await user.tab();
+    expect(document.activeElement).toBe(button("전적 초기화"));
     await user.tab({ shift: true });
-    expect(document.activeElement).toBe(button("가위"));
+    expect(document.activeElement).toBe(button("보"));
   });
 
   it("라운드 후에도 포커스가 같은 버튼에 남아 키보드만으로 계속 플레이할 수 있다", async () => {
@@ -742,5 +744,331 @@ describe("저장 완료와 자동 실행 시작 사이의 경합 (whenIdle, G-3�
     await screen.findByText("자동 대결 10회를 마쳤어요.");
     await settle(env);
     expect(env.mem.records()).toHaveLength(10);
+  });
+});
+
+
+describe("US5: 전적 초기화 (확인 후에만, 원자적)", () => {
+  const dialog = () => screen.getByRole("alertdialog");
+  const seeded = () =>
+    newEnv([
+      { user: "rock", computer: "scissors", at: 1 },
+      { user: "rock", computer: "paper", at: 2 },
+      { user: "rock", computer: "rock", at: 3 },
+    ]);
+  const hasClear = (env: Env) => env.mem.log.includes("clearAll");
+
+  it("버튼은 즉시 초기화하지 않고 확인창을 연다: 제목·본문·접근성 속성, 포커스는 취소 버튼(요건 1)", async () => {
+    const user = userEvent.setup();
+    const env = seeded();
+    await renderGame(env);
+    await user.click(button("전적 초기화"));
+    const d = dialog();
+    expect(d.getAttribute("aria-modal")).toBe("true");
+    expect(within(d).getByRole("heading", { name: "전적을 초기화할까요?" })).toBeTruthy();
+    expect(d.getAttribute("aria-labelledby")).toBe("reset-title");
+    expect(d.textContent).toContain("전체 전적과 모든 대결 기록이 삭제되며 되돌릴 수 없어요. 마지막 대결 결과도 함께 지워져요.");
+    expect(document.activeElement).toBe(within(d).getByRole("button", { name: "취소" }));
+    expect(hasClear(env)).toBe(false);
+    expect(line()).toBe("승 1 패 1 무 1");
+  });
+
+  it("Tab·Shift+Tab은 대화상자 안에서 순환하고(요건 2), 배경에 inert가 걸렸다가 닫히면 풀린다", async () => {
+    const user = userEvent.setup();
+    const view = await renderGame(seeded());
+    await user.click(button("전적 초기화"));
+    const d = dialog();
+    expect(view.container.hasAttribute("inert")).toBe(true); // jsdom은 inert를 구현하지 않으므로 속성만 확인
+    for (let i = 0; i < 5; i++) {
+      await user.tab();
+      expect(d.contains(document.activeElement)).toBe(true);
+    }
+    for (let i = 0; i < 3; i++) {
+      await user.tab({ shift: true });
+      expect(d.contains(document.activeElement)).toBe(true);
+    }
+    await user.keyboard("{Escape}");
+    expect(view.container.hasAttribute("inert")).toBe(false);
+  });
+
+  it("Esc·취소는 아무것도 바꾸지 않고 닫으며 포커스는 '전적 초기화' 버튼으로 복원된다(요건 3·4, AC2-060)", async () => {
+    const user = userEvent.setup();
+    const env = seeded();
+    await renderGame(env);
+    await user.click(button("전적 초기화"));
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    expect(document.activeElement).toBe(button("전적 초기화"));
+    await user.click(button("전적 초기화"));
+    await user.click(within(dialog()).getByRole("button", { name: "취소" }));
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    expect(document.activeElement).toBe(button("전적 초기화"));
+    expect(hasClear(env)).toBe(false);
+    expect(env.mem.records()).toHaveLength(3);
+    expect(line()).toBe("승 1 패 1 무 1");
+  });
+
+  it("전체 삭제: 전적·기록·마지막 결과가 함께 초기화되고 낭독되며 포커스가 복원된다(AC2-041·042)", async () => {
+    const user = userEvent.setup();
+    const env = seeded();
+    await renderGame(env, { random: () => 0.4 });
+    await user.click(button("가위"));
+    await expectLine("승 2 패 1 무 1");
+    await user.click(button("전적 초기화"));
+    await user.click(within(dialog()).getByRole("button", { name: "전체 삭제" }));
+    await waitFor(() => expect(status()).toBe("누적 전적과 대결 기록을 모두 초기화했어요."));
+    expect(line()).toBe("승 0 패 0 무 0");
+    expect(env.mem.records()).toHaveLength(0);
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    expect(within(screen.getByRole("region", { name: "최근 라운드 결과" })).getAllByText("?")).toHaveLength(2);
+    await waitFor(() => expect(document.activeElement).toBe(button("전적 초기화")));
+    // 초기화 뒤 새 대결은 seq 1부터 저장된다
+    await user.click(button("가위"));
+    await waitFor(() => expect(env.mem.records().map((r) => r.seq)).toEqual([1]));
+  });
+
+  it("초기화 중에는 진행 안내가 보이고 버튼이 비활성(aria-busy)이며 포커스는 안내로 이동했다가 끝나면 복원된다(AC2-061)", async () => {
+    const user = userEvent.setup();
+    const env = seeded();
+    await renderGame(env);
+    const resume = env.mem.pauseWrites();
+    await user.click(button("전적 초기화"));
+    await user.click(within(dialog()).getByRole("button", { name: "전체 삭제" }));
+    const busy = await screen.findByText(/초기화하는 중이에요\. 잠시 기다려 주세요\./);
+    expect((button("전적 초기화") as HTMLButtonElement).disabled).toBe(true);
+    expect(button("전적 초기화").getAttribute("aria-busy")).toBe("true");
+    expect(document.activeElement).toBe(busy);
+    expect(busy.closest("[role]")).toBeNull(); // live region 아님
+    expect((button("직접 대결") as HTMLButtonElement).disabled).toBe(true);
+    await act(async () => resume());
+    await waitFor(() => expect(document.activeElement).toBe(button("전적 초기화")));
+    expect(line()).toBe("승 0 패 0 무 0");
+  });
+
+  it("FIFO: 진행 중이던 저장이 끝난 뒤에 초기화된다", async () => {
+    const user = userEvent.setup({ delay: null });
+    const env = newEnv();
+    await renderGame(env);
+    const resume = env.mem.pauseWrites();
+    await user.click(button("가위")); // 저장 보류
+    await user.click(button("전적 초기화"));
+    await user.click(within(dialog()).getByRole("button", { name: "전체 삭제" }));
+    await act(async () => resume());
+    await waitFor(() => expect(line()).toBe("승 0 패 0 무 0"));
+    expect(env.mem.log.filter((l) => l === "clearAll" || l.startsWith("recordBattles"))).toEqual(["recordBattles:1", "clearAll"]);
+    expect(env.mem.records()).toHaveLength(0);
+  });
+
+  it("초기화 실패는 성공으로 표시하지 않는다: 데이터·전적 불변, role=alert, 다시 시도 가능(AC2-043)", async () => {
+    const user = userEvent.setup();
+    const env = seeded();
+    await renderGame(env);
+    env.mem.fail.clear = 1;
+    await user.click(button("전적 초기화"));
+    await user.click(within(dialog()).getByRole("button", { name: "전체 삭제" }));
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toContain("초기화하지 못했어요");
+    expect(alert.textContent).toContain("전적과 기록은 아무것도 지워지지 않았어요");
+    expect(line()).toBe("승 1 패 1 무 1");
+    expect(env.mem.records()).toHaveLength(3);
+    expect(status()).not.toContain("초기화했어요");
+    await waitFor(() => expect(document.activeElement).toBe(button("전적 초기화")));
+    // 다시 시도하면 성공하고 실패 안내는 사라진다
+    await user.click(button("전적 초기화"));
+    await user.click(within(dialog()).getByRole("button", { name: "전체 삭제" }));
+    await waitFor(() => expect(line()).toBe("승 0 패 0 무 0"));
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("자동 대결 실행 중에는 초기화할 수 없고 안내가 보인다(P-4)", async () => {
+    const user = userEvent.setup({ delay: null });
+    const clock = manualClock();
+    await renderGame(newEnv(), { wait: clock.wait });
+    await toAuto(user);
+    await user.click(button("애니메이션"));
+    await user.click(button("자동 대결 시작"));
+    await screen.findByRole("progressbar");
+    expect((button("전적 초기화") as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText("자동 대결 중에는 초기화할 수 없어요. 먼저 중지하세요.")).toBeTruthy();
+    await user.click(button("중지"));
+    await screen.findByText("중지했어요.");
+    expect((button("전적 초기화") as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it("읽기 실패·손상 상태에서도 초기화로 탈출할 수 있다(FR2-019)", async () => {
+    const user = userEvent.setup();
+    const env = seeded();
+    env.mem.fail.read = 1;
+    await renderGame(env);
+    expect(screen.getByRole("alert").textContent).toContain("저장된 전적을 불러오지 못했어요");
+    await user.click(button("전적 초기화"));
+    await user.click(within(dialog()).getByRole("button", { name: "전체 삭제" }));
+    await waitFor(() => expect(env.mem.records()).toHaveLength(0));
+    await waitFor(() => expect(line()).toBe("승 0 패 0 무 0"));
+  });
+});
+
+describe("US6: 저장 안내, 연습 대결, 재시도와 복구", () => {
+  const alertBox = () => screen.getByRole("alert");
+  const failSave = async (env: Env, user: ReturnType<typeof userEvent.setup>) => {
+    env.mem.fail.write = 1;
+    await user.click(button("가위"));
+    await waitFor(() => expect(status()).toContain("연습 대결"));
+  };
+
+  it("수동 저장 실패: role=alert 박스(문구·재시도 버튼), 연습 칩, 전적 불변(AC2-034~036)", async () => {
+    const user = userEvent.setup();
+    const env = newEnv();
+    await renderGame(env, { random: () => 0.4 });
+    await failSave(env, user);
+    const box = alertBox();
+    expect(box.textContent).toContain("기록을 저장하지 못했어요");
+    expect(box.textContent).toContain("저장 불가 상태예요. 지금부터의 직접 대결은 연습 대결이며 전적과 기록에 반영되지 않아요.");
+    expect(within(box).getByRole("button", { name: "저장 다시 시도" })).toBeTruthy();
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
+    expect(line()).toBe("승 0 패 0 무 0");
+  });
+
+  it("재시도 성공: 복구됨 안내와 낭독, 연습 결과 제거, 이후 대결은 저장된다(AC2-070, P-14)", async () => {
+    const user = userEvent.setup();
+    const env = newEnv([{ user: "rock", computer: "scissors", at: 1 }]);
+    await renderGame(env, { random: () => 0.4 });
+    await failSave(env, user);
+    await user.click(button("저장 다시 시도"));
+    await screen.findByText("저장이 복구되었어요");
+    expect(status()).toBe("저장이 복구되었어요. 지금부터 대결이 기록돼요. 복구 전의 연습 대결은 저장되지 않아요.");
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.queryByText("저장되지 않음 · 연습 대결")).toBeNull();
+    expect(within(screen.getByRole("region", { name: "최근 라운드 결과" })).getAllByText("?")).toHaveLength(2);
+    expect(line()).toBe("승 1 패 0 무 0");
+    expect(env.store.gate()).toEqual({ closed: false });
+    await user.click(button("가위"));
+    await waitFor(() => expect(env.mem.records()).toHaveLength(2));
+    await expectLine("승 2 패 0 무 0");
+    expect(screen.queryByText("저장이 복구되었어요")).toBeNull(); // 다음 확정 대결에서 해제
+  });
+
+  it("복구됨 안내는 모드 전환으로는 해제되지 않고 초기화 성공에서 해제된다", async () => {
+    const user = userEvent.setup();
+    const env = newEnv();
+    await renderGame(env);
+    await failSave(env, user);
+    await user.click(button("저장 다시 시도"));
+    await screen.findByText("저장이 복구되었어요");
+    await user.click(button("자동 대결"));
+    await user.click(button("직접 대결"));
+    expect(screen.getByText("저장이 복구되었어요")).toBeTruthy();
+    await user.click(button("전적 초기화"));
+    await user.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "전체 삭제" }));
+    await waitFor(() => expect(screen.queryByText("저장이 복구되었어요")).toBeNull());
+  });
+
+  it("재시도 실패: 박스·연습 상태 유지, 숨은 role=alert 문장, 버튼 재활성, 다음 재시도 성공(P-14)", async () => {
+    const user = userEvent.setup();
+    const env = newEnv();
+    await renderGame(env);
+    await failSave(env, user);
+    env.mem.fail.probe = 1;
+    await user.click(button("저장 다시 시도"));
+    await waitFor(() => expect(screen.getByText("저장을 다시 시도했지만 실패했어요. 연습 대결은 계속할 수 있어요.")).toBeTruthy());
+    const hidden = screen.getByText("저장을 다시 시도했지만 실패했어요. 연습 대결은 계속할 수 있어요.");
+    expect(hidden.getAttribute("role")).toBe("alert");
+    expect((button("저장 다시 시도") as HTMLButtonElement).disabled).toBe(false);
+    expect(screen.getByText("기록을 저장하지 못했어요")).toBeTruthy();
+    // 연습 대결은 계속 가능하며 저장되지 않는다
+    await user.click(button("가위"));
+    await settle(env);
+    expect(env.mem.records()).toHaveLength(0);
+    await user.click(button("저장 다시 시도"));
+    await screen.findByText("저장이 복구되었어요");
+  });
+
+  it("재시도 중에는 '다시 시도하는 중…'(aria-busy, 비활성)과 재시도 중 문장이 보이고 초기화는 막힌다(G-6)", async () => {
+    const user = userEvent.setup();
+    const env = newEnv();
+    await renderGame(env);
+    await failSave(env, user);
+    let release!: () => void;
+    const gateP = new Promise<void>((r) => (release = r));
+    const origProbe = env.mem.probeWrite;
+    env.mem.probeWrite = async () => {
+      await gateP;
+      return origProbe();
+    };
+    await user.click(button("저장 다시 시도"));
+    const retrying = await screen.findByRole("button", { name: "다시 시도하는 중…" });
+    expect((retrying as HTMLButtonElement).disabled).toBe(true);
+    expect(retrying.getAttribute("aria-busy")).toBe("true");
+    expect(status()).toBe("저장소를 다시 확인하는 중이에요");
+    expect((button("전적 초기화") as HTMLButtonElement).disabled).toBe(true);
+    await act(async () => release());
+    await screen.findByText("저장이 복구되었어요");
+  });
+
+  it("초기화 중에는 저장 다시 시도가 비활성이다(G-6)", async () => {
+    const user = userEvent.setup();
+    const env = newEnv();
+    await renderGame(env);
+    await failSave(env, user);
+    const resume = env.mem.pauseWrites();
+    await user.click(button("전적 초기화"));
+    await user.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "전체 삭제" }));
+    await screen.findByText(/초기화하는 중이에요/);
+    expect((button("저장 다시 시도") as HTMLButtonElement).disabled).toBe(true);
+    await act(async () => resume());
+    await waitFor(() => expect((button("저장 다시 시도") as HTMLButtonElement).disabled).toBe(false));
+  });
+
+  it("자동 대결 저장 실패 중단: 박스는 live 없이 표시되고 낭독은 5번 문장이 맡는다", async () => {
+    const user = userEvent.setup({ delay: null });
+    const env = newEnv();
+    await renderGame(env, { random: () => 0.4 });
+    await toAuto(user);
+    await user.click(button("1,000회"));
+    const original = env.mem.recordBattles;
+    let n = 0;
+    env.mem.recordBattles = async (items) => {
+      if (++n === 2) env.mem.fail.write = 1;
+      return original(items);
+    };
+    await user.click(button("자동 대결 시작"));
+    const title = await screen.findByText("기록을 저장하지 못했어요");
+    expect(title.closest('[role="alert"]')).toBeNull();
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(status()).toBe("저장에 실패해 자동 대결이 중단됐어요. 100회까지 저장됐어요.");
+    // 복구하면 다시 실행할 수 있다
+    await user.click(button("저장 다시 시도"));
+    await screen.findByText("저장이 복구되었어요");
+    expect((button("자동 대결 시작") as HTMLButtonElement).disabled).toBe(false);
+    expect(total()).toBe(100);
+    expect(env.mem.records()).toHaveLength(100); // SC2-002: 합계 == 기록 수
+  });
+
+  it("읽기 실패: role=alert 박스와 '—' 전적, 재시도 성공 시 저장된 전적이 표시된다(AC2-058)", async () => {
+    const user = userEvent.setup();
+    const env = newEnv([
+      { user: "rock", computer: "scissors", at: 1 },
+      { user: "rock", computer: "scissors", at: 2 },
+    ]);
+    env.mem.fail.read = 1;
+    await renderGame(env);
+    const box = alertBox();
+    expect(box.textContent).toContain("저장된 전적을 불러오지 못했어요");
+    expect(box.textContent).toContain("전적이 0이라는 뜻은 아니에요");
+    expect(screen.getAllByText("—")).toHaveLength(3);
+    await user.click(within(box).getByRole("button", { name: "저장 다시 시도" }));
+    await screen.findByText("저장이 복구되었어요");
+    expect(line()).toBe("승 2 패 0 무 0");
+  });
+
+  it("읽기 실패 후 재시도도 실패하면 연습 상태가 유지되고 전적은 계속 '—'이다", async () => {
+    const user = userEvent.setup();
+    const env = newEnv();
+    env.mem.fail.read = 2; // 최초 읽기 + 재시도의 읽기
+    await renderGame(env);
+    await user.click(button("저장 다시 시도"));
+    await waitFor(() => expect(screen.getByText("저장을 다시 시도했지만 실패했어요. 연습 대결은 계속할 수 있어요.")).toBeTruthy());
+    expect(screen.getAllByText("—")).toHaveLength(3);
+    expect(env.store.gate().closed).toBe(true);
   });
 });

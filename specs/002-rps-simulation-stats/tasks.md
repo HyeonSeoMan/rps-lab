@@ -100,11 +100,11 @@ description: "RPS Lab v2 구현 Tasks (자동 대결 · 기록 · 통계)"
 **Goal**: `/history`에서 통계·비율 막대·기록 목록(20건 페이지네이션)을 제공한다.
 **Independent Test**: QS M-04/M-08. AC2-020~AC2-029, AC2-032·033, AC2-063~067, SC2-003·SC2-005.
 
-- [ ] T025 [P] [US4] 공통 헤더 `src/components/AppHeader.tsx` + `AppHeader.test.tsx`, `src/app/layout.tsx` 수정: `게임` / `기록 · 통계` `next/link`(`prefetch={false}`), `aria-current="page"`, `usePathname()` 끝 슬래시 정규화(Plan 16.1·T-D2), 경로 하드코딩 금지 (FR2-015·FR2-022·FR2-023, D5(a)) — 검증: `/`, `/history`, `/history/` 모두 올바른 현재 위치 표시
-- [ ] T026 [US4] 기록 훅 `src/components/useHistory.ts`: 리듀서 + 요청 번호(경합 시 이전 응답 무시), 키셋 페이지(이전·다음), `loadStats`, 로딩·빈·오류 상태 (FR2-011·FR2-013·FR2-014·FR2-017) — 검증: 메모리 저장소로 페이지 이동·연속 클릭 경합 테스트 (T005·T012 이후)
-- [ ] T027 [P] [US4] `StatsPanel`(`ScoreCards` 재사용·승률 `formatPercent`)·`RatioBar`(막대 구간이 실제 승/패/무 비율, 퍼센트 범례, 텍스트 라벨, 색 보정값, FR2-024, P-10) (`src/components/history/StatsPanel.tsx`, `RatioBar.tsx`, css) — 검증: 비율 합 100%·0건 처리, 막대 색상 win `#3bb989`·lose `#ed7b83`·draw `#a5afc2`
-- [ ] T028 [P] [US4] `RecordList`(데스크톱 표 + 모바일 카드, 순번·일시·내 선택·컴퓨터 선택·결과, 결과는 `judge()`로 계산·색만으로 구분하지 않음, P-1) 와 `Pager`(이전/다음, 현재 페이지, 한 페이지 20건, 비활성 상태) (`src/components/history/RecordList.tsx`, `Pager.tsx`, css) (FR2-012·FR2-013·FR2-014) — 검증: 20건 초과 시 페이지 분리, 전체를 한 번에 렌더링하지 않음
-- [ ] T029 [US4] `src/components/history/History.tsx` + `src/app/history/page.tsx` 조합(`store` prop 기본 `getBrowserBattleStore()`)과 `History.test.tsx`: 빈 기록·로딩·오류 상태, 통계 = 기록 일치(합계 == 기록 수), 최신순 정렬, 페이지 이동, 읽기 실패 시 카드별 `승/패/무 기록을 불러오지 못했어요` (FR2-011·FR2-013·FR2-015·FR2-017·FR2-024, AC2-020~AC2-029·AC2-063~067) — 검증: 통과, 320px에서 가로 스크롤 없음은 T040에서 수동 확인 (T025~T028 이후)
+- [x] T025 [P] [US4] 공통 헤더 `src/components/AppHeader.tsx` + `AppHeader.test.tsx`, `src/app/layout.tsx` 수정: `게임` / `기록 · 통계` `next/link`(`prefetch={false}`), `aria-current="page"`, `usePathname()` 끝 슬래시 정규화(Plan 16.1·T-D2), 경로 하드코딩 금지 (FR2-015·FR2-022·FR2-023, D5(a)) — 검증: `/`, `/history`, `/history/` 모두 올바른 현재 위치 표시
+- [x] T026 [US4] 기록 훅 `src/components/useHistory.ts`: 리듀서 + 요청 번호(경합 시 이전 응답 무시), 키셋 페이지(이전·다음), `loadStats`, 로딩·빈·오류 상태 (FR2-011·FR2-013·FR2-014·FR2-017) — 검증: 메모리 저장소로 페이지 이동·연속 클릭 경합 테스트 (T005·T012 이후)
+- [x] T027 [P] [US4] `StatsPanel`(`ScoreCards` 재사용·승률 `formatPercent`)·`RatioBar`(막대 구간이 실제 승/패/무 비율, 퍼센트 범례, 텍스트 라벨, 색 보정값, FR2-024, P-10) (`src/components/history/StatsPanel.tsx`, `RatioBar.tsx`, css) — 검증: 비율 합 100%·0건 처리, 막대 색상 win `#3bb989`·lose `#ed7b83`·draw `#a5afc2`
+- [x] T028 [P] [US4] `RecordList`(데스크톱 표 + 모바일 카드, 순번·일시·내 선택·컴퓨터 선택·결과, 결과는 `judge()`로 계산·색만으로 구분하지 않음, P-1) 와 `Pager`(이전/다음, 현재 페이지, 한 페이지 20건, 비활성 상태) (`src/components/history/RecordList.tsx`, `Pager.tsx`, css) (FR2-012·FR2-013·FR2-014) — 검증: 20건 초과 시 페이지 분리, 전체를 한 번에 렌더링하지 않음
+- [x] T029 [US4] `src/components/history/History.tsx` + `src/app/history/page.tsx` 조합(`store` prop 기본 `getBrowserBattleStore()`)과 `History.test.tsx`: 빈 기록·로딩·오류 상태, 통계 = 기록 일치(합계 == 기록 수), 최신순 정렬, 페이지 이동, 읽기 실패 시 카드별 `승/패/무 기록을 불러오지 못했어요` (FR2-011·FR2-013·FR2-015·FR2-017·FR2-024, AC2-020~AC2-029·AC2-063~067) — 검증: 통과, 320px에서 가로 스크롤 없음은 T040에서 수동 확인 (T025~T028 이후)
 
 ---
 
@@ -113,8 +113,8 @@ description: "RPS Lab v2 구현 Tasks (자동 대결 · 기록 · 통계)"
 **Goal**: 확인 후에만 전적·기록·마지막 결과를 함께 초기화한다.
 **Independent Test**: QS M-05. AC2-041~AC2-044, AC2-060·061.
 
-- [ ] T030 [P] [US5] `ResetControl` + `ResetDialog`(커스텀 `role="alertdialog"`, 4요건: 열림 시 포커스 이동, `inert`로 배경 트랩, Esc 닫기, 닫으면 여는 버튼으로 포커스 복원; 취소 시 아무것도 변경 안 함) (`src/components/game/ResetControl.tsx`, `ResetDialog.tsx`, css) (FR2-019·FR2-022, D4) — 검증: jsdom에 `showModal`/`inert` 없음에 맞춘 구현, 키보드·포커스 테스트
-- [ ] T031 [US5] 세션 훅에 전체 초기화 연결: 초기화 중 `aria-busy` 상태, 큐의 FIFO 안에서 수행(앞선 쓰기 후), 성공 시 전적·기록·마지막 결과 동시 초기화와 낭독 `누적 전적과 대결 기록을 모두 초기화했어요.`, 실패 시 상태 불변·오류 안내, 포커스 처리(초기화 후 상태 문단 → 버튼 복원), 초기화↔재시도 상호 배제(G-6) (FR2-019, FR2-017) — 검증: 컴포넌트 테스트: 취소 무변경, 성공 후 0/0/0·기록 0건, 실패 시 유지 (T010·T030 이후)
+- [x] T030 [P] [US5] `ResetControl` + `ResetDialog`(커스텀 `role="alertdialog"`, 4요건: 열림 시 포커스 이동, `inert`로 배경 트랩, Esc 닫기, 닫으면 여는 버튼으로 포커스 복원; 취소 시 아무것도 변경 안 함) (`src/components/game/ResetControl.tsx`, `ResetDialog.tsx`, css) (FR2-019·FR2-022, D4) — 검증: jsdom에 `showModal`/`inert` 없음에 맞춘 구현, 키보드·포커스 테스트
+- [x] T031 [US5] 세션 훅에 전체 초기화 연결: 초기화 중 `aria-busy` 상태, 큐의 FIFO 안에서 수행(앞선 쓰기 후), 성공 시 전적·기록·마지막 결과 동시 초기화와 낭독 `누적 전적과 대결 기록을 모두 초기화했어요.`, 실패 시 상태 불변·오류 안내, 포커스 처리(초기화 후 상태 문단 → 버튼 복원), 초기화↔재시도 상호 배제(G-6) (FR2-019, FR2-017) — 검증: 컴포넌트 테스트: 취소 무변경, 성공 후 0/0/0·기록 0건, 실패 시 유지 (T010·T030 이후)
 
 ---
 
@@ -123,9 +123,9 @@ description: "RPS Lab v2 구현 Tasks (자동 대결 · 기록 · 통계)"
 **Goal**: 저장 실패 시 앱이 깨지지 않고 연습 대결로 전환하며, 명시적 재시도 성공 시에만 복구한다.
 **Independent Test**: QS M-06/M-15~M-17. AC2-034~AC2-040, AC2-056~059, AC2-068~071, SC2-002.
 
-- [ ] T032 [P] [US6] `StorageNotice` 구현: 저장 불가 안내, 연습 대결 표시("(저장되지 않음 · 연습 대결)" 구분 P-12, 전적에 포함 안 함), `저장 다시 시도` 버튼(FR2-025), 복구됨 안내와 `role="alert"` 실패 낭독(재시도 실패 문구 승인본, 시각 변경 없음) (`src/components/game/StorageNotice.tsx`, css) (FR2-018·FR2-025, P-12·P-14) — 검증: UC 5절 문구·role 일치
-- [ ] T033 [US6] 세션 훅·`auto-runner` 통합: 자동 실행 중 저장 실패 시 중단·`{k}회까지 저장됐어요` 안내·게이트 닫힘, 이후 모든 쓰기는 연습 대결로 처리(전적 불포함·이동/모드 전환으로 열리지 않음), `recover()`로만 복구, 복구됨 안내 해제 규칙(다음 확정 대결·초기화 성공·페이지 이동에서 해제, 모드 전환은 유지), 초기 읽기 실패 시 읽기 불가 상태 (FR2-017·FR2-018·FR2-025, P-14, G-3·G-6·G-8) — 검증: 메모리 저장소 실패 주입 테스트: 실패 시 전적 == 기록 수 유지(SC2-002), 재시도 실패 시 연습 유지, 성공 후 이후 대결 저장 (T013·T031·T032 이후)
-- [ ] T034 [US6] 다중 탭·자원 처리 검증 테스트(어댑터): 두 연결에서 동시 쓰기해도 `seq` 중복·유실 없음(데이터 무결성 보장, 화면 실시간성은 보장하지 않음 P-9), 쓰기 중 연결 무효화 후 재시도 (SC 3.5절, FR2-016·FR2-017) — 검증: 어댑터 테스트 통과 (T009 이후)
+- [x] T032 [P] [US6] `StorageNotice` 구현: 저장 불가 안내, 연습 대결 표시("(저장되지 않음 · 연습 대결)" 구분 P-12, 전적에 포함 안 함), `저장 다시 시도` 버튼(FR2-025), 복구됨 안내와 `role="alert"` 실패 낭독(재시도 실패 문구 승인본, 시각 변경 없음) (`src/components/game/StorageNotice.tsx`, css) (FR2-018·FR2-025, P-12·P-14) — 검증: UC 5절 문구·role 일치
+- [x] T033 [US6] 세션 훅·`auto-runner` 통합: 자동 실행 중 저장 실패 시 중단·`{k}회까지 저장됐어요` 안내·게이트 닫힘, 이후 모든 쓰기는 연습 대결로 처리(전적 불포함·이동/모드 전환으로 열리지 않음), `recover()`로만 복구, 복구됨 안내 해제 규칙(다음 확정 대결·초기화 성공·페이지 이동에서 해제, 모드 전환은 유지), 초기 읽기 실패 시 읽기 불가 상태 (FR2-017·FR2-018·FR2-025, P-14, G-3·G-6·G-8) — 검증: 메모리 저장소 실패 주입 테스트: 실패 시 전적 == 기록 수 유지(SC2-002), 재시도 실패 시 연습 유지, 성공 후 이후 대결 저장 (T013·T031·T032 이후)
+- [x] T034 [US6] 다중 탭·자원 처리 검증 테스트(어댑터): 두 연결에서 동시 쓰기해도 `seq` 중복·유실 없음(데이터 무결성 보장, 화면 실시간성은 보장하지 않음 P-9), 쓰기 중 연결 무효화 후 재시도 (SC 3.5절, FR2-016·FR2-017) — 검증: 어댑터 테스트 통과 (T009 이후)
 
 ---
 
@@ -134,7 +134,7 @@ description: "RPS Lab v2 구현 Tasks (자동 대결 · 기록 · 통계)"
 **Goal**: 저장된 v2 기록만이 전적의 근거이며 v1의 localStorage 전적은 사용·이전하지 않는다.
 **Independent Test**: QS M-09. AC2-045~AC2-054(v1 비이전·호환·배포 요구 포함).
 
-- [ ] T035 [US7] v1 `localStorage` 전적(`score-storage.ts`)을 앱에서 읽거나 쓰지 않도록 확인·제거: `src/lib/score-storage.ts`와 `score-storage.test.ts` 삭제, `Game.tsx`에서 참조 제거, v1 키가 있어도 v2 전적에 영향 없음을 검증하는 테스트 추가(데이터를 삭제·수정하지는 않음) (FR2-020, Spec v1 호환성) — 검증: `src/`에 `score-storage` 참조 0건, 기존 localStorage 값이 있어도 초기 전적 0/0/0 (T018 이후)
+- [x] T035 [US7] v1 `localStorage` 전적(`score-storage.ts`)을 앱에서 읽거나 쓰지 않도록 확인·제거: `src/lib/score-storage.ts`와 `score-storage.test.ts` 삭제, `Game.tsx`에서 참조 제거, v1 키가 있어도 v2 전적에 영향 없음을 검증하는 테스트 추가(데이터를 삭제·수정하지는 않음) (FR2-020, Spec v1 호환성) — 검증: `src/`에 `score-storage` 참조 0건, 기존 localStorage 값이 있어도 초기 전적 0/0/0 (T018 이후)
 
 ---
 

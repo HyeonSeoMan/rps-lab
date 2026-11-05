@@ -131,5 +131,34 @@ export function useGameSession({ store, random, now, wait = defaultWait }: Sessi
     abortRef.current?.abort();
   }, [dispatch]);
 
-  return { state, play, setMode, setSettings, start, stop };
+  const requestReset = useCallback(() => dispatch({ type: "RESET_REQUESTED" }), [dispatch]);
+  const cancelReset = useCallback(() => dispatch({ type: "RESET_CANCELLED" }), [dispatch]);
+
+  /** 확인 후에만 호출된다. 큐의 FIFO 안에서 실행되어 앞선 저장이 끝난 뒤 초기화된다. 실패하면 성공으로 표시하지 않는다. */
+  const confirmReset = useCallback(async () => {
+    const before = latest.current;
+    if (sessionReducer(before, { type: "RESET_CONFIRMED" }) === before) return;
+    dispatch({ type: "RESET_CONFIRMED" });
+    try {
+      await store.clearAll();
+      dispatch({ type: "RESET_SUCCEEDED" });
+    } catch {
+      dispatch({ type: "RESET_FAILED" });
+    }
+  }, [store, dispatch]);
+
+  /** 저장 다시 시도: 큐가 비면 연결을 새로 열어 검증·쓰기 프로브를 하고, 성공해야만 게이트가 열린다. */
+  const retry = useCallback(async () => {
+    const before = latest.current;
+    if (sessionReducer(before, { type: "RETRY_STARTED" }) === before) return;
+    dispatch({ type: "RETRY_STARTED" });
+    try {
+      const stats = await store.recover();
+      dispatch({ type: "RETRY_SUCCEEDED", stats });
+    } catch {
+      dispatch({ type: "RETRY_FAILED" });
+    }
+  }, [store, dispatch]);
+
+  return { state, play, setMode, setSettings, start, stop, requestReset, cancelReset, confirmReset, retry };
 }

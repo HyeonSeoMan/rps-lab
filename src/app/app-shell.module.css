@@ -1,0 +1,5 @@
+/* 앱 루트: 컨테이너 쿼리의 기준(폭 600px 이하에서 모바일 배치). 데스크톱 최대 폭 820px. */
+.shell { container-type: inline-size; container-name: app; width: min(100% - 28px, 820px); margin: 0 auto; padding: 20px 0 56px; }
+@container app (max-width: 600px) {
+  .shell { padding-top: 12px; }
+}

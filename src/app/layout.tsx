@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import AppHeader from "@/components/AppHeader";
+import styles from "./app-shell.module.css";
 
 export const metadata: Metadata = {
   title: "가위바위보",
@@ -9,7 +11,12 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="ko">
-      <body>{children}</body>
+      <body>
+        <div className={styles.shell}>
+          <AppHeader />
+          {children}
+        </div>
+      </body>
     </html>
   );
 }

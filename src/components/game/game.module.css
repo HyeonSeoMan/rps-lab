@@ -1,7 +1,5 @@
 /* 게임 페이지 스타일. 기준: docs/references/rps-lab-v2-ui.html (토큰은 app/globals.css). 컨테이너 폭 600px 이하에서 모바일 배치(U4). */
-.game { width: min(100% - 28px, 820px); margin: 0 auto; padding: clamp(20px, 5vw, 48px) 0 56px; }
-.frame { container-type: inline-size; container-name: app; }
-.title { margin: 0 0 20px; font-size: 29px; line-height: 1.1; font-weight: 800; letter-spacing: -0.04em; overflow-wrap: anywhere; }
+.game { display: block; }
 .skeleton { min-height: 27rem; }
 .card { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 26px 20px 24px; box-shadow: 0 9px 30px #284b8008; }
 .srOnly { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
@@ -96,3 +94,27 @@
   .spin { animation: none; }
   .bar i { transition: none; }
 }
+
+/* 저장 안내 박스 */
+.notice { display: grid; gap: 8px; border-radius: 14px; padding: 13px 15px; margin: 0 0 18px; border: 1px solid; font-size: 14px; line-height: 1.55; }
+.notice strong { display: block; font-size: 14.5px; }
+.notice p { margin: 0; }
+.err { background: var(--err-bg); border-color: var(--err-line); color: var(--err-fg); }
+.warn { background: var(--warn-bg); border-color: var(--warn-line); color: var(--warn-fg); }
+.ok { background: var(--ok-bg); border-color: var(--ok-line); color: var(--ok-fg); }
+.act { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.retry { min-height: 44px; padding: 0 18px; border-radius: 11px; border: 1px solid currentColor; background: #fff; color: inherit; font-weight: 800; display: inline-flex; align-items: center; gap: 8px; }
+.retry:disabled { opacity: 0.7; }
+
+/* 전적 초기화 */
+.resetWrap { text-align: center; margin-top: 16px; }
+.reset { min-height: 44px; padding: 0 23px; border: 1px solid #d9e3f0; background: #fff; color: var(--muted); border-radius: 30px; font-size: 13px; font-weight: 700; }
+.resetWrap .note { margin-top: 10px; }
+.resetWrap .notice { margin: 14px 0 0; text-align: left; }
+.overlay { position: fixed; inset: 0; background: #24334c59; display: flex; justify-content: center; align-items: flex-start; padding: 140px 16px 16px; z-index: 50; }
+.dialog { background: #fff; border-radius: 20px; padding: 24px; max-width: 440px; width: 100%; box-shadow: 0 20px 50px #24334c40; }
+.dialog h2 { margin: 0 0 8px; font-size: 19px; }
+.dialog p { margin: 0 0 18px; font-size: 14px; line-height: 1.6; color: #44546e; }
+.dlgBtns { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+.dlgBtns button { min-height: 44px; padding: 0 20px; border-radius: 11px; font-weight: 800; border: 1px solid #d3dcea; background: #fff; }
+.dlgBtns .danger { background: var(--danger); border-color: var(--danger); color: #fff; }

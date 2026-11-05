@@ -1,0 +1,57 @@
+/* 기록·통계 페이지. 기준: docs/references/rps-lab-v2-ui.html (토큰은 app/globals.css) */
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 26px 20px 24px; box-shadow: 0 9px 30px #284b8008; }
+.second { margin-top: 20px; }
+.stitle { margin: 0; font-size: 22px; font-weight: 800; }
+.sub { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
+.hint { margin: 8px 0 0; font-size: 13px; color: var(--muted); }
+.srOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.sumbox { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 18px 0 12px; background: var(--summary); border-radius: 14px; padding: 14px; }
+.sumbox small { display: block; font-size: 13px; color: var(--muted); }
+.sumbox strong { font-size: 24px; color: var(--accent); font-weight: 800; }
+.graph { display: flex; height: 18px; border-radius: 10px; overflow: hidden; background: var(--bar-bg); margin: 18px 0 10px; }
+.graph i { display: block; height: 100%; }
+.gw { background: var(--g-w); }
+.gl { background: var(--g-l); }
+.gd { background: var(--g-d); }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 13px; color: var(--muted); }
+.legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; }
+.lw::before { background: var(--g-w); }
+.ll::before { background: var(--g-l); }
+.ld::before { background: var(--g-d); }
+.cnt { display: flex; justify-content: space-between; align-items: center; margin: 16px 0 18px; background: var(--summary); border-radius: 12px; padding: 0 14px; min-height: 65px; }
+.cnt span { font-size: 14px; color: var(--muted); }
+.cnt strong { font-size: 22px; color: var(--accent); font-weight: 800; }
+.table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.table thead th { background: var(--summary); color: var(--muted); font-weight: 700; text-align: left; padding: 13px 10px; height: 43px; }
+.table td { padding: 14px 10px; border-bottom: 1px solid #edf0f5; }
+.tag { font-weight: 800; }
+.tag[data-o="win"] { color: var(--rec-win); }
+.tag[data-o="lose"] { color: var(--out-lose); }
+.tag[data-o="draw"] { color: var(--out-draw); }
+.cards { display: none; list-style: none; gap: 12px; padding: 0; }
+.rc { background: var(--panel); border-radius: 12px; padding: 12px 13px; display: grid; gap: 5px; min-height: 95px; }
+.m { font-size: 12px; color: var(--muted); }
+.p { font-size: 14px; font-weight: 800; display: flex; flex-wrap: wrap; gap: 2px 22px; }
+.rc .tag { font-size: 13px; }
+.pager { display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 20px; font-size: 13px; color: var(--muted); }
+.pager button { min-height: 44px; min-width: 72px; padding: 0 16px; border: 1px solid #dce4ef; background: #fff; border-radius: 10px; font-weight: 700; font-size: 13px; color: var(--foreground); }
+.state { border-radius: 14px; padding: 30px 16px; text-align: center; background: var(--summary); color: var(--muted); font-size: 14px; display: grid; gap: 10px; justify-items: center; }
+.ico { font-size: 30px; line-height: 1; }
+.errState { background: var(--err-bg); color: var(--err-fg); border: 1px solid var(--err-line); }
+.retry { min-height: 44px; padding: 0 18px; border-radius: 11px; border: 1px solid currentColor; background: #fff; color: inherit; font-weight: 800; }
+.retry:disabled { opacity: 0.7; }
+.sk { display: grid; gap: 10px; }
+.sk i { display: block; height: 44px; border-radius: 10px; background: linear-gradient(90deg, #edf1f8 25%, #f7f9fd 50%, #edf1f8 75%); background-size: 200% 100%; animation: sh 1.3s linear infinite; }
+@keyframes sh { to { background-position: -200% 0; } }
+
+/* 컨테이너(앱 루트) 폭 600px 이하: 카드 목록(U4) */
+@container app (max-width: 600px) {
+  .card { padding: 26px 20px 24px; }
+  .sumbox { gap: 8px; }
+  .table { display: none; }
+  .cards { display: grid; }
+  .pager { gap: 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sk i { animation: none; }
+}

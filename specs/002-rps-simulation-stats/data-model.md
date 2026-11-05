@@ -76,7 +76,8 @@ type StorageStatus =
   | { phase: "loading" }                                           // 최초 읽기 전: 전적·선택 버튼 없음(skeleton)
   | { phase: "ready" }
   | { phase: "unavailable"; cause: "read" | "write";               // P-14 저장 불가 상태
-      retry: "idle" | "retrying" | "failed" }
+      retry: "idle" | "retrying" | "failed";
+      origin: "load" | "manual" | "run" }                          // 진입 경로: 저장 안내의 낭독 방식(UI Contract 5절)을 정한다
 
 type RunState =
   | { phase: "idle" }

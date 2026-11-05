@@ -8,6 +8,8 @@ import BattleArena from "./game/BattleArena";
 import ManualPanel from "./game/ManualPanel";
 import ModeToggle from "./game/ModeToggle";
 import ScoreCards from "./game/ScoreCards";
+import ResetControl from "./game/ResetControl";
+import StorageNotice from "./game/StorageNotice";
 import { useGameSession } from "./useGameSession";
 import styles from "./game/game.module.css";
 
@@ -21,7 +23,7 @@ type Props = {
 
 export default function GameBoard({ random = Math.random, store, now = Date.now, wait }: Props) {
   const resolvedStore = useMemo(() => store ?? getBrowserBattleStore(), [store]);
-  const { state, play, setMode, setSettings, start, stop } = useGameSession({ store: resolvedStore, random, now, wait });
+  const { state, play, setMode, setSettings, start, stop, requestReset, cancelReset, confirmReset, retry } = useGameSession({ store: resolvedStore, random, now, wait });
 
   // 최초 읽기가 끝나기 전에는 전적 값·선택 버튼 없이 빈 영역만 보인다(잘못된 0/0/0 방지).
   if (state.storage.phase === "loading") return <div aria-busy="true" className={styles.skeleton} />;
@@ -30,6 +32,12 @@ export default function GameBoard({ random = Math.random, store, now = Date.now,
   const showManual = state.mode === "manual" && !running;
   return (
     <div className={styles.card}>
+      <StorageNotice
+        storage={state.storage}
+        recovered={state.notice === "recovered"}
+        retryDisabled={state.reset !== "idle"}
+        onRetry={retry}
+      />
       <ModeToggle mode={running ? "auto" : state.mode} disabled={running || state.reset === "resetting"} onChange={setMode} />
       <BattleArena mode={state.mode} last={state.last} announcement={state.announcement} />
       {showManual ? (
@@ -47,6 +55,15 @@ export default function GameBoard({ random = Math.random, store, now = Date.now,
         />
       )}
       <ScoreCards stats={state.stats} />
+      <ResetControl
+        reset={state.reset}
+        running={running}
+        retrying={state.storage.phase === "unavailable" && state.storage.retry === "retrying"}
+        failed={state.notice === "reset-failed"}
+        onRequest={requestReset}
+        onCancel={cancelReset}
+        onConfirm={confirmReset}
+      />
     </div>
   );
 }

@@ -5,7 +5,13 @@ import * as announce from "./announce";
 export type StorageStatus =
   | { phase: "loading" }
   | { phase: "ready" }
-  | { phase: "unavailable"; cause: "read" | "write"; retry: "idle" | "retrying" | "failed" };
+  | {
+      phase: "unavailable";
+      cause: "read" | "write";
+      retry: "idle" | "retrying" | "failed";
+      /** 저장 불가에 들어온 경로. 저장 안내의 낭독 방식(role=alert 여부)을 정한다(UI Contract 5절). */
+      origin: "load" | "manual" | "run";
+    };
 
 export type RunState =
   | { phase: "idle" }
@@ -67,7 +73,12 @@ export function createInitialSession(): SessionState {
   };
 }
 
-const unavailable = (cause: "read" | "write"): StorageStatus => ({ phase: "unavailable", cause, retry: "idle" });
+const unavailable = (cause: "read" | "write", origin: "load" | "manual" | "run"): StorageStatus => ({
+  phase: "unavailable",
+  cause,
+  retry: "idle",
+  origin,
+});
 const isLoading = (s: SessionState) => s.storage.phase === "loading";
 const isUnavailable = (s: SessionState) => s.storage.phase === "unavailable";
 const clearRecovered = (n: SessionState["notice"]) => (n === "recovered" ? null : n);
@@ -83,13 +94,13 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
       if (!isLoading(state)) return state;
       return {
         ...state,
-        storage: unavailable(action.cause),
+        storage: unavailable(action.cause, "load"),
         stats: action.cause === "write" ? action.stats : null,
       };
 
     case "LOAD_FAILED":
       if (!isLoading(state)) return state;
-      return { ...state, storage: unavailable("read"), stats: null };
+      return { ...state, storage: unavailable("read", "load"), stats: null };
 
     case "COMMITTED": {
       return {
@@ -110,7 +121,7 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
       };
 
     case "SAVE_FAILED": {
-      const storage: StorageStatus = isUnavailable(state) ? state.storage : unavailable("write");
+      const storage: StorageStatus = isUnavailable(state) ? state.storage : unavailable("write", "manual");
       return {
         ...state,
         storage,
@@ -163,7 +174,7 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
         run: { phase: "idle" },
         summary,
         stats: stats ?? state.stats,
-        storage: aborted && !isUnavailable(state) ? unavailable("write") : state.storage,
+        storage: aborted && !isUnavailable(state) ? unavailable("write", "run") : state.storage,
         announcement: announce.runSummary(summary),
       };
     }

@@ -1,0 +1,17 @@
+.top { display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; padding: 0 8px; min-height: 56px; margin-bottom: 16px; }
+.brand { display: flex; align-items: baseline; gap: 10px; }
+.brand h1 { margin: 0; font-size: 29px; line-height: 1.1; font-weight: 800; letter-spacing: -0.04em; overflow-wrap: anywhere; }
+.brand small { font-size: 12px; font-weight: 700; color: var(--brand-sub); }
+.nav { display: flex; gap: 6px; }
+.nav a { display: inline-flex; align-items: center; border-radius: 12px; min-height: 44px; padding: 0 16px; font-size: 14px; font-weight: 700; color: var(--muted); text-decoration: none; }
+.nav a[aria-current="page"] { background: #fff; color: var(--accent); box-shadow: 0 2px 10px #24334c0f; }
+.nav a:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+
+/* 컨테이너(앱 루트) 폭 600px 이하: 탐색을 제목 아래(U6) */
+@container app (max-width: 600px) {
+  .top { padding: 0 4px; flex-direction: column; align-items: flex-start; gap: 6px; min-height: 0; }
+  .brand h1 { font-size: 23px; }
+}
+@container app (max-width: 360px) {
+  .nav a { padding: 0 12px; }
+}

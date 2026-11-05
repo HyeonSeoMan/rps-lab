@@ -27,10 +27,7 @@ export default function Game(props: Props) {
 
   return (
     <main className={styles.game}>
-      <h1 className={styles.title}>가위바위보</h1>
-      <div className={styles.frame}>
-        {ready ? <GameBoard {...props} /> : <div aria-busy="true" className={styles.skeleton} />}
-      </div>
+      {ready ? <GameBoard {...props} /> : <div aria-busy="true" className={styles.skeleton} />}
     </main>
   );
 }
