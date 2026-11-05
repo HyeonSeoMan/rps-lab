@@ -45,4 +45,4 @@
 ## Notes
 
 - Plan, Tasks, 구현, 테스트 코드 변경은 사용자 지시 전까지 하지 않는다. Git 커밋·Push는 사용자가 직접 한다.
-- 목업(`docs/references/rps-lab-v2-final.html`)의 임시 데이터·프로토타입 동작은 요구사항으로 해석하지 않았다(Spec의 "목업에만 있고 확정하지 않은 것" 참조).
+- UI 레퍼런스(`docs/references/rps-lab-v2-ui.html`)의 샘플 데이터·미리보기 동작은 요구사항으로 해석하지 않았다(Spec의 "UI 레퍼런스와 요구사항의 대응" 참조).

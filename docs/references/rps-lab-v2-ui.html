@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RPS Lab v2 — UI 레퍼런스</title>
+<style>
+/* ===========================================================================
+   RPS Lab v2 — UI 레퍼런스 (사용자 승인 완료, v2의 단일 시각 기준)
+   - 시각 레퍼런스일 뿐 React 구현 코드가 아니다. 이 HTML/CSS를 그대로 복사해 쓰지 않는다.
+   - 게임 로직·IndexedDB·localStorage·네트워크를 쓰지 않는다. 상태 전환은 메모리 변수(S)만 바꾼다.
+     화면의 숫자·기록(128, 52/41/35 등)은 모두 샘플이며 데이터 요구사항이 아니다.
+   - 기능 요구사항의 기준은 승인된 specs/002-rps-simulation-stats/spec.md.
+   - 색상·크기·간격: Figma(2:34, 2:86, 2:120, 2:152, 2:204)에서 확인한 값 우선. Figma는 참고 자료로 유지.
+     Figma에 없던 값은 rps-lab-v2-final.html 값을 썼고, 신규 값(경고·오류·성공 색 등)은 승인되었다.
+   - 접근성 대비: 일반 텍스트 4.5:1 / 큰 글자(24px 이상 또는 18.66px 이상 굵게) 3:1 기준으로
+     필요한 색만 최소 보정했다(승인). 원래 Figma 값은 :root 주석에 남겼다.
+
+   [승인된 디자인 결정]
+     U1 선택 버튼: 데스크톱은 흰 배경+테두리, 모바일은 연한 채움(#f0f4fa)
+     U2 WCAG AA를 위한 최소 색상 보정
+     U3 이 파일에 작성된 신규 UI 문구
+     U4 모바일 카드 목록 전환: 컨테이너(.frame) 너비 600px 이하
+     U5 전적 초기화: 화면 내 커스텀 대화상자
+     U6 탐색: 데스크톱은 헤더 오른쪽, 모바일은 제목 아래
+     경고·오류·성공 색상, 연습 칩, 전적 초기화 버튼 스타일
+     버튼 테두리 대비(필 버튼 등)는 현 상태 유지 — 실제 구현에서 버튼 식별성을 검증한다.
+
+   [구현 단계 필수 요구사항] 전적 초기화 확인창(role="alertdialog"):
+       1) 열릴 때 포커스를 대화상자 안(취소 버튼)으로 이동
+       2) 열려 있는 동안 포커스가 대화상자 안에 머무름(앱 헤더·본문은 inert, Tab/Shift+Tab 순환)
+       3) Escape로 닫기(취소와 동일, 데이터 변경 없음)
+       4) 닫힌 뒤 대화상자를 연 "전적 초기화" 버튼으로 포커스 복원
+     이 파일은 위 4가지를 구현했고 브라우저로 검증했다. 실제 앱은 별도로 구현·테스트해야 한다.
+     (미리보기 도구는 확인창이 열려 있는 동안 함께 잠긴다. 이는 도구 동작이며 앱 요구사항이 아니다.)
+
+   [반응형 구현 메모] 컨테이너 쿼리는 컨테이너 자신(.frame)의 스타일을 바꾸지 못하므로,
+     패딩은 자식 .app이 갖고 @container app 규칙이 .app과 그 하위 요소를 바꾼다.
+   =========================================================================== */
+:root{
+  /* Figma 확인 값 */
+  --bg:#f3f6fc; --card:#fff; --seg:#f0f4fa; --panel:#f8faff; --summary:#f5f8fd;
+  --text:#24334c;
+  --muted:#637083;      /* Figma #748399 (흰 배경 3.85:1) → 4.5:1 이상으로 보정 */
+  --accent:#3870ca;     /* Figma #3c78d8 (흰 글자 4.31:1) → 4.5:1 이상으로 보정. 버튼 배경·활성 탭 글자·큰 수치 */
+  --brand-sub:#55729c;  /* Figma #6689bb (3.31:1) → 4.5:1 이상으로 보정 */
+  --me:#eaf4ff; --cpu:#fff1e9;
+  --vs:#8996a8;         /* Figma #9aa9bd (2.39:1, 장식) → 큰 글자 기준 3:1 확보 */
+  --win-bg:#e9f7f1; --win-fg:#147d56;  /* 승 글자: 4.65:1 — 보정 없음 */
+  --lose-bg:#fff0f0; --lose-fg:#bc4851; /* Figma #c34b54 (4.26:1) → 보정 */
+  --draw-bg:#eff2f8; --draw-fg:#626f88; /* Figma #63718a (4.40:1) → 보정 */
+  --rec-win:#128257;     /* #159463 (흰 3.85:1) → 보정. 결과 문구·기록 태그(모바일 카드 배경 #f8faff에서도 4.5:1) */
+  --bar-bg:#e9edf4;
+  /* HTML 레퍼런스(rps-lab-v2-final.html)에서 가져온 값 — Figma에는 없음 */
+  --line:#e1e8f3; --pill-line:#dbe4f1; --out-lose:#c24954;    /* #dc5360 (흰 3.85:1) → 보정(카드 배경 #f8faff에서도 4.5:1) */
+  --out-draw:#637083;    /* #758398 (3.85:1) → 보정(보조 텍스트색과 동일) */
+  --g-w:#3bb989; --g-l:#ed7b83; --g-d:#a5afc2; --focus:#4e80df; --stop-line:#e4a4a8; --stop-fg:#c84450;
+  /* 새 값 (Figma·HTML 모두 없음) — 승인됨 */
+  --warn-bg:#fff7e6; --warn-line:#e9b949; --warn-fg:#7a4a00;
+  --err-bg:#fff0f0; --err-line:#e8a3a8; --err-fg:#9b2c35;
+  --ok-bg:#e9f7f1; --ok-line:#8fd0b3; --ok-fg:#0f6244;
+  --danger:#bc4851;
+  font-family:system-ui,-apple-system,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif;
+  color:var(--text);
+}
+*{box-sizing:border-box}
+html{background:#d9e0ec}
+body{margin:0;min-height:100vh}
+button{font:inherit;color:inherit;cursor:pointer}
+button:disabled{cursor:not-allowed}
+
+/* ───────────── 미리보기 도구(디자인 아님) ───────────── */
+.pv{position:relative;z-index:20;background:#1f2a3d;color:#e8eef8;padding:10px 14px;font-size:12.5px;box-shadow:0 4px 14px #0003}
+.pv h1{margin:0 0 6px;font-size:13px;font-weight:800;letter-spacing:.02em}
+.pv h1 b{background:#e08a00;color:#1f2a3d;border-radius:4px;padding:1px 6px;margin-right:6px}
+.pv .row{display:flex;flex-wrap:wrap;gap:4px 14px}
+.pv .grp{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin:2px 0}
+.pv .grp>span{opacity:.7;margin-right:2px}
+.pv button{border:1px solid #4a5a78;background:#2b3951;border-radius:6px;padding:4px 8px;font-size:12px;min-height:28px}
+.pv button[aria-pressed="true"]{background:#e8eef8;color:#1f2a3d;border-color:#e8eef8;font-weight:800}
+.app{padding:20px 24px 40px}
+.stage{display:flex;justify-content:center;padding:20px 12px 8px}
+@media (max-width:440px){.stage{padding-left:0;padding-right:0}.frame{border-radius:0}}  /* 좁은 뷰포트에서는 프레임이 화면 폭 전체(390/320)가 되게 한다 */
+.frame{position:relative;container-type:inline-size;container-name:app;background:var(--bg);width:820px;max-width:100%;
+  padding:0;border-radius:6px;box-shadow:0 0 0 1px #0002,0 14px 40px #1f2a3d33}
+.readout{max-width:820px;margin:10px auto 40px;padding:0 12px;font-size:12.5px;color:#324058}
+.readout div{background:#fff;border:1px dashed #9aa9bd;border-radius:8px;padding:10px 12px;line-height:1.6}
+.readout b{color:#1f2a3d}
+
+/* ───────────── 앱 화면 ───────────── */
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px 12px;flex-wrap:wrap;padding:0 8px;min-height:56px;margin-bottom:16px}
+.brand{display:flex;align-items:baseline;gap:10px}
+.brand h1{margin:0;font-size:29px;line-height:1.1;font-weight:800;letter-spacing:-.04em}
+.brand small{font-size:12px;font-weight:700;color:var(--brand-sub)}
+.nav{display:flex;gap:6px}
+.nav button{border:0;background:transparent;border-radius:12px;min-height:44px;padding:0 16px;font-size:14px;font-weight:700;color:var(--muted)}
+.nav button[aria-current="page"]{background:#fff;color:var(--accent);box-shadow:0 2px 10px #24334c0f}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:26px 20px 24px;box-shadow:0 9px 30px #284b8008}
+.card+.card{margin-top:20px}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--seg);border-radius:14px;padding:5px;margin-bottom:20px}
+.seg button{border:0;background:transparent;border-radius:11px;min-height:45px;font-size:14px;font-weight:700;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:#fff;color:var(--accent);box-shadow:0 2px 8px #2d5e9918}
+.arena{display:grid;grid-template-columns:1fr 118px 1fr;align-items:stretch;margin:0 0 14px}
+.fighter{border-radius:17px;min-height:176px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:10px 8px}
+.fighter.me{background:var(--me)}.fighter.cpu{background:var(--cpu)}
+.who{font-size:14px;font-weight:700;color:var(--muted)}
+.hand{font-size:60px;line-height:1.1}
+.hname{font-size:15px;font-weight:700;min-height:22px}
+.center{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center}
+.vs{font-size:22px;font-weight:800;color:var(--vs)}
+.outcome{font-size:20px;font-weight:800;min-height:28px;white-space:nowrap}
+.outcome[data-o="win"]{color:var(--rec-win)}.outcome[data-o="lose"]{color:var(--out-lose)}.outcome[data-o="draw"]{color:var(--out-draw)}
+.unsaved{display:flex;justify-content:center;margin:0 0 12px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--warn-line);background:var(--warn-bg);color:var(--warn-fg);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:800}
+.chip::before{content:"⚠";font-size:12px}
+.guide{margin:0 0 16px;text-align:center;font-size:14px;color:var(--muted);min-height:21px}
+
+.choices{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.choice{border:1px solid #d9e3f0;background:#fff;border-radius:16px;min-height:98px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-size:14px;font-weight:700}
+.choice span{font-size:34px;line-height:1}
+.choice:hover:not(:disabled){background:#f3f8ff;border-color:#85afe9}
+.panel{background:var(--panel);border-radius:17px;padding:16px 17px 17px}
+.fld{margin-bottom:16px}
+.fld h3{margin:0 0 9px;font-size:14px;font-weight:800}
+.pills{display:grid;gap:16px 16px;margin-top:0}
+.pills.c2{grid-template-columns:1fr 1fr}.pills.c3{grid-template-columns:repeat(3,1fr)}
+.pills+.pills{margin-top:12px}
+.pill{border:1px solid var(--pill-line);background:#fff;border-radius:11px;min-height:48px;font-size:14px;font-weight:700;color:var(--text)}
+.pill[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.primary{width:100%;min-height:54px;border:0;border-radius:12px;background:var(--accent);color:#fff;font-size:15px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:10px}
+.progress{margin-top:14px}
+.prow{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:14px}
+.prow strong{font-size:16px}
+.stop{min-height:44px;border:1px solid var(--stop-line);background:#fff;color:var(--stop-fg);border-radius:10px;padding:0 20px;font-weight:700}
+.bar{height:9px;background:#dce5f3;border-radius:99px;overflow:hidden;margin:9px 0}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .25s}
+.hint{margin:8px 0 0;font-size:13px;color:var(--muted)}
+.runnote{margin:12px 0 0;padding:11px 14px;border-radius:12px;background:#eaf2ff;color:#1f4f9f;font-size:13.5px;font-weight:700;display:flex;gap:10px;align-items:center}
+.spin{width:16px;height:16px;border-radius:50%;border:2.5px solid currentColor;border-right-color:transparent;animation:spin .9s linear infinite;flex:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+.summary-box{margin:14px 0 0;padding:13px 15px;border-radius:12px;background:var(--summary);border:1px solid var(--line);font-size:14px;line-height:1.6}
+.summary-box b{font-weight:800}
+.summary-box.bad{background:var(--err-bg);border-color:var(--err-line);color:var(--err-fg)}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px 7px;margin-top:20px}
+.stats{column-gap:6px}
+.stat{border-radius:15px;padding:14px 16px;min-height:86px}
+.stat small{display:block;font-size:13px;font-weight:700;margin-bottom:2px}
+.stat strong{font-size:28px;line-height:1.25}
+.stat.w{background:var(--win-bg);color:var(--win-fg)}.stat.l{background:var(--lose-bg);color:var(--lose-fg)}.stat.d{background:var(--draw-bg);color:var(--draw-fg)}
+.resetwrap{text-align:center;margin-top:16px}
+.reset{min-height:44px;padding:0 23px;border:1px solid #d9e3f0;background:#fff;color:var(--muted);border-radius:30px;font-size:13px;font-weight:700}
+
+/* 알림 배너(저장 상태) */
+.note{display:grid;gap:8px;border-radius:14px;padding:13px 15px;margin:0 0 18px;border:1px solid;font-size:14px;line-height:1.55}
+.note strong{display:block;font-size:14.5px}
+.note p{margin:0}
+.note.err{background:var(--err-bg);border-color:var(--err-line);color:var(--err-fg)}
+.note.warn{background:var(--warn-bg);border-color:var(--warn-line);color:var(--warn-fg)}
+.note.ok{background:var(--ok-bg);border-color:var(--ok-line);color:var(--ok-fg)}
+.note .act{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.retry{min-height:44px;padding:0 18px;border-radius:11px;border:1px solid currentColor;background:#fff;color:inherit;font-weight:800;display:inline-flex;align-items:center;gap:8px}
+.retry:disabled{opacity:.7}
+
+/* 기록·통계 */
+.stitle{margin:0;font-size:22px;font-weight:800}
+.sub{margin:6px 0 0;font-size:13px;color:var(--muted)}
+.sumbox{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:18px 0 12px;background:var(--summary);border-radius:14px;padding:14px}
+.sumbox small{display:block;font-size:13px;color:var(--muted)}
+.sumbox strong{font-size:24px;color:var(--accent);font-weight:800}
+.sumbox div+div{text-align:left}
+.graph{display:flex;height:18px;border-radius:10px;overflow:hidden;background:var(--bar-bg);margin:18px 0 10px}
+.graph i{display:block;height:100%}.graph .gw{background:var(--g-w)}.graph .gl{background:var(--g-l)}.graph .gd{background:var(--g-d)}
+.legend{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:13px;color:var(--muted)}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;background:var(--c)}
+.cnt{display:flex;justify-content:space-between;align-items:center;margin:16px 0 18px;background:var(--summary);border-radius:12px;padding:0 14px;min-height:65px}
+.cnt span{font-size:14px;color:var(--muted)}.cnt strong{font-size:22px;color:var(--accent);font-weight:800}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{background:var(--summary);color:var(--muted);font-weight:700;text-align:left;padding:13px 10px;height:43px}
+thead th:first-child{border-radius:5px 0 0 5px}thead th:last-child{border-radius:0 5px 5px 0}
+td{padding:14px 10px;border-bottom:1px solid #edf0f5}
+.tag{font-weight:800}.tag[data-o="win"]{color:var(--rec-win)}.tag[data-o="lose"]{color:var(--out-lose)}.tag[data-o="draw"]{color:var(--out-draw)}
+.cards{display:none;gap:12px}
+.rc{background:var(--panel);border-radius:12px;padding:12px 13px;display:grid;gap:5px;min-height:95px}
+.rc .m{font-size:12px;color:var(--muted)}.rc .p{font-size:14px;font-weight:800;display:flex;flex-wrap:wrap;gap:2px 22px}.rc .tag{font-size:13px}
+.pager{display:flex;justify-content:center;align-items:center;gap:12px;margin-top:20px;font-size:13px;color:var(--muted)}
+.pager button{min-height:44px;min-width:72px;padding:0 16px;border:1px solid #dce4ef;background:#fff;border-radius:10px;font-weight:700;font-size:13px;color:var(--text)}
+.state{border-radius:14px;padding:30px 16px;text-align:center;background:var(--summary);color:var(--muted);font-size:14px;display:grid;gap:10px;justify-items:center}
+.state .ico{font-size:30px;line-height:1}
+.state.err{background:var(--err-bg);color:var(--err-fg);border:1px solid var(--err-line)}
+.sk{display:grid;gap:10px}
+.sk i{display:block;height:44px;border-radius:10px;background:linear-gradient(90deg,#edf1f8 25%,#f7f9fd 50%,#edf1f8 75%);background-size:200% 100%;animation:sh 1.3s linear infinite}
+@keyframes sh{to{background-position:-200% 0}}
+
+/* 포커스·비활성 */
+button:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.show-focus button{outline:3px solid var(--focus);outline-offset:2px}
+.seg button:focus-visible,.show-focus .seg button,.nav button:focus-visible,.show-focus .nav button{outline-offset:-3px}
+button:disabled{opacity:.45}
+.seg button:disabled[aria-pressed="true"]{opacity:.75}
+.pill:disabled[aria-pressed="true"]{opacity:.7}
+
+/* 확인 대화상자(화면 내) */
+.overlay{position:absolute;inset:0;background:#24334c59;display:flex;justify-content:center;align-items:flex-start;padding:140px 16px 16px;z-index:5;border-radius:6px}
+.dialog{background:#fff;border-radius:20px;padding:24px;max-width:440px;width:100%;box-shadow:0 20px 50px #24334c40}
+.dialog h2{margin:0 0 8px;font-size:19px}
+.dialog p{margin:0 0 18px;font-size:14px;line-height:1.6;color:#44546e}
+.dialog .btns{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.dialog .btns button{min-height:44px;padding:0 20px;border-radius:11px;font-weight:800;border:1px solid #d3dcea;background:#fff}
+.dialog .btns .danger{background:var(--danger);border-color:var(--danger);color:#fff}
+
+/* 요소 주석 표시(디자인 아님) */
+.show-notes [data-note]{outline:2px dashed #2f5fb3;outline-offset:3px;position:relative}
+.show-notes [data-note]::after{content:attr(data-note);position:absolute;right:0;top:-11px;background:#2f5fb3;color:#fff;font-size:10px;line-height:1;font-weight:800;padding:3px 5px;border-radius:4px;z-index:3;pointer-events:none;white-space:nowrap}
+
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* 반응형: 프레임(컨테이너) 폭 기준 — Figma 모바일 390 프레임 값 */
+@container app (max-width:600px){
+  .app{padding:20px 12px 36px}
+  .top{padding:0 4px;flex-direction:column;align-items:flex-start;gap:6px;min-height:0}   /* U6: 모바일은 탐색을 제목 아래 */
+  .brand h1{font-size:23px}
+  .card{padding:26px 20px 24px}
+  .arena{grid-template-columns:1fr 56px 1fr}
+  .fighter{min-height:140px}
+  .hand{font-size:44px}
+  .vs{font-size:20px}
+  .outcome{font-size:14px}
+  .choice{min-height:82px;border-radius:15px;background:var(--seg)} /* 모바일: 연한 채움(U1) */
+  .choice span{font-size:30px}
+  .pills{gap:12px}
+  .stats{gap:8px;margin-top:20px}
+  .stat{padding:13px 10px 10px;min-height:86px}
+  .sumbox{gap:8px}
+  table{display:none}
+  .cards{display:grid}
+  .pager{gap:8px}
+}
+@container app (max-width:360px){
+  .nav button{padding:0 12px}
+  .stat strong{font-size:24px}
+  .panel{padding:14px 10px 14px}
+  .pills{gap:8px}
+  .pill{font-size:13px;padding:0 2px;white-space:nowrap}
+  .hname{font-size:13px}
+}
+@media (prefers-reduced-motion:reduce){
+  .spin,.sk i{animation:none}.bar i{transition:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ─────────── 미리보기 도구 (디자인 대상 아님) ─────────── -->
+<div class="pv" id="pv" role="region" aria-label="미리보기 도구 (앱 UI 아님)">
+  <h1><b>PREVIEW ONLY</b>UI 레퍼런스(샘플 데이터) · 실제 게임 로직/IndexedDB와 무관 · 아래 도구는 앱 UI가 아니라 상태 전환용입니다</h1>
+  <p id="pv-lock" hidden style="margin:0 0 6px;color:#ffd58a;font-weight:700">확인 창이 열려 있어 이 도구는 잠겨 있어요. 앱 화면의 “취소”나 Esc로 닫으세요.</p>
+  <div class="row" id="pv-rows"></div>
+</div>
+<div class="stage"><div class="frame" id="frame"></div></div>
+<div class="readout"><div id="readout"></div></div>
+<div class="readout" style="margin-top:-24px"><div><b>확정된 디자인 결정 · 구현 시 검증 사항(미리보기 전용 메모)</b><br>
+확정: U1 선택 버튼(데스크톱 흰 배경+테두리 / 모바일 채움) · U2 최소 색상 보정(:root 주석에 원래 값) · U3 신규 문구 · U4 카드 전환 600px 이하 · U5 화면 내 확인창 · U6 탐색 위치<br>
+구현 시 검증: 버튼 테두리 대비는 현 상태 유지 → 실제 구현에서 버튼 식별성 확인 · 확인창 포커스 4요건(파일 상단 주석)<br>
+<span style="color:#55657d">※ 이 HTML은 시각 레퍼런스이며 실제 동작(판정·저장·집계)을 구현하지 않습니다. 숫자와 기록은 샘플입니다.</span></div></div>
+
+<script>
+/* 이 스크립트는 상태 표시용 렌더러다. 대결 판정·난수·저장 코드는 없다. */
+const S={page:'game',width:'820',mode:'manual',run:'idle',result:'none',storage:'ok',reset:'none',hist:'data',pg:'first',pick:'fixed',focus:false,notes:false};
+const GROUPS=[
+ ['page','화면',[['game','게임'],['history','기록·통계']]],
+ ['width','폭',[['820','데스크톱 820'],['390','모바일 390'],['320','최소 320']]],
+ ['mode','모드',[['manual','직접'],['auto','자동']]],
+ ['pick','내 손 방식',[['fixed','고정'],['random','매번 랜덤']]],
+ ['run','자동 실행',[['idle','대기'],['instant','즉시 결과 실행 중'],['anim','애니메이션 실행 중'],['stopped','중지 후 요약'],['done','완료 요약'],['aborted','저장 실패로 중단']]],
+ ['result','대결 결과',[['none','없음(초기)'],['win','승리'],['lose','패배'],['draw','무승부']]],
+ ['storage','저장 상태',[['ok','정상'],['save-failed','저장 실패'],['read-failed','읽기 실패'],['retrying','재시도 중'],['recovered','복구됨']]],
+ ['reset','전적 초기화',[['none','기본'],['confirm','확인 창'],['busy','진행 중'],['failed','실패 안내']]],
+ ['hist','기록 상태',[['data','기록 있음'],['empty','0건'],['loading','불러오는 중'],['error','조회 오류']]],
+ ['pg','페이지 위치',[['first','첫 페이지'],['mid','중간'],['last','마지막']]],
+];
+const HAND={s:['✌️','가위'],r:['✊','바위'],p:['✋','보']};
+const RES={win:{t:'승리!',c:['s','p'],tag:'승리'},lose:{t:'패배',c:['s','r'],tag:'패배'},draw:{t:'무승부',c:['s','s'],tag:'무승부'}};
+const ROWS=[[128,'s','p','win'],[127,'r','r','draw'],[126,'p','s','lose'],[125,'s','p','win'],[124,'p','r','win'],[123,'r','p','lose']];
+
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const hand=k=>HAND[k][0]+' '+HAND[k][1];
+const isRun=()=>S.run==='instant'||S.run==='anim';
+const unsavedMode=()=>S.storage==='save-failed'||S.storage==='read-failed'||S.storage==='retrying';
+const rv=(id,text)=>S.notes?` data-note="${text}"`:'';
+
+function numbers(){
+  if(S.storage==='read-failed') return {fail:true};
+  if(S.hist==='empty') return {w:0,l:0,d:0,n:0,rate:'0.0%',pw:0,pl:0,pd:0,lw:'0.0%',ll:'0.0%',ld:'0.0%'};
+  const w=52,l=41,d=35,n=128,f=x=>(x/n*100).toFixed(1);
+  return {w,l,d,n,rate:f(w)+'%',pw:100*w/n,pl:100*l/n,pd:100*d/n,lw:f(w)+'%',ll:f(l)+'%',ld:f(d)+'%'};
+}
+
+/* ── 공통 조각 ── */
+function header(inert=''){
+  return `<header class="top"${inert}>
+    <div class="brand"><h1>가위바위보</h1><small>RPS Lab v2</small></div>
+    <nav class="nav" aria-label="페이지"${rv('R1','R1 상단 탐색')}>
+      <button type="button" data-act="page:game" ${S.page==='game'?'aria-current="page"':''}>게임</button>
+      <button type="button" data-act="page:history" ${S.page==='history'?'aria-current="page"':''}>기록 · 통계</button>
+    </nav></header>`;
+}
+function storageNote(){
+  const st=S.storage;
+  if(S.page==='history'&&st!=='read-failed'&&st!=='retrying'&&st!=='recovered') return '';
+  if(st==='ok') return '';
+  const r=rv('R6','R6 저장 안내');
+  if(st==='save-failed') return `<div class="note err" role="alert"${r}><strong>기록을 저장하지 못했어요</strong><p>저장 불가 상태예요. 지금부터의 직접 대결은 <b>연습 대결</b>이며 전적과 기록에 반영되지 않아요. 자동 대결은 저장을 복구한 뒤에 할 수 있어요.</p><div class="act"><button class="retry" type="button" data-act="storage:retrying"${rv('R8','R8 저장 다시 시도')}>저장 다시 시도</button></div></div>`;
+  if(st==='read-failed') return `<div class="note err" role="alert"${r}><strong>저장된 전적을 불러오지 못했어요</strong><p>전적이 0이라는 뜻은 아니에요. 저장을 다시 시도하기 전까지는 연습 대결만 할 수 있어요.</p><div class="act"><button class="retry" type="button" data-act="storage:retrying"${rv('R8','R8 저장 다시 시도')}>저장 다시 시도</button></div></div>`;
+  if(st==='retrying') return `<div class="note warn" role="status" aria-busy="true"${r}><strong>저장소를 다시 확인하는 중이에요</strong><div class="act"><button class="retry" type="button" disabled${rv('R8','R8 시도 중 상태')}><span class="spin" aria-hidden="true"></span>다시 시도하는 중…</button></div></div>`;
+  if(st==='recovered') return `<div class="note ok" role="status"${r}><strong>저장이 복구되었어요</strong><p>지금부터 대결이 기록돼요. 복구 전의 연습 대결은 저장되지 않아요.</p></div>`;
+  return '';
+}
+function arenaBlock(){
+  const shown=(S.storage==='recovered')?'none':S.result;   // 복구 직후엔 연습 결과를 저장된 결과로 오인되지 않게 비운다(AC2-070)
+  let me='?',cpu='?',mn='',cn='',out='',o='none';
+  if(shown!=='none'){const r=RES[shown];me=HAND[r.c[0]][0];cpu=HAND[r.c[1]][0];mn=HAND[r.c[0]][1];cn=HAND[r.c[1]][1];out=r.t;o=shown;}
+  const unsaved=shown!=='none'&&unsavedMode();
+  const guide=shown!=='none'?'':(S.mode==='auto'?'자동 대결 설정 후 시작하세요':'가위, 바위, 보 중 하나를 선택하세요');
+  return `<div class="arena" aria-hidden="true">
+    <div class="fighter me"><div class="who">나</div><div class="hand">${me}</div><div class="hname">${mn}</div></div>
+    <div class="center"><div class="vs">VS</div><div class="outcome" data-o="${o}"${rv('R4','R4 결과 문구')}>${out}</div></div>
+    <div class="fighter cpu"><div class="who">컴퓨터</div><div class="hand">${cpu}</div><div class="hname">${cn}</div></div>
+  </div>
+  ${unsaved?`<div class="unsaved"${rv('R7','R7 연습 표시')}><span class="chip">저장되지 않음 · 연습 대결</span></div>`:''}
+  <p class="guide" aria-hidden="true">${guide}</p>`;
+}
+function stats(n){
+  const v=k=>n.fail?'—':n[k];
+  return `<div class="stats" role="list" aria-label="누적 전적">
+    <div class="stat w" role="listitem"><small>승</small><strong>${v('w')}</strong></div>
+    <div class="stat l" role="listitem"><small>패</small><strong>${v('l')}</strong></div>
+    <div class="stat d" role="listitem"><small>무</small><strong>${v('d')}</strong></div></div>`;
+}
+
+/* ── 게임 화면 ── */
+function autoPanel(){
+  const run=S.run, locked=isRun();
+  const dis=locked?'disabled':'';
+  const pill=(on,t,a)=>`<button class="pill" type="button" aria-pressed="${on}" ${dis} data-act="${a}">${t}</button>`;
+  let action='';
+  if(run==='instant'){
+    action=`<button class="primary" type="button" disabled aria-busy="true"><span class="spin" aria-hidden="true"></span>저장하며 실행하는 중…</button>
+      <p class="runnote" role="status"${rv('R3','R3 즉시 실행 상태(진행바·중지 없음, P-6)')}><span class="spin" aria-hidden="true"></span>100회를 처리하고 저장하는 중이에요. 끝나면 결과가 표시돼요.</p>`;
+  } else if(run==='anim'){
+    action=`<button class="primary" type="button" disabled>대결 진행 중…</button>
+      <div class="progress"${rv('R2','R2 진행률·중지')}><div class="prow"><strong>37 / 100회</strong><button class="stop" type="button">중지</button></div>
+      <div class="bar" role="progressbar" aria-label="자동 대결 진행" aria-valuemin="0" aria-valuemax="100" aria-valuenow="37" aria-valuetext="37회 / 100회"><i style="width:37%"></i></div>
+      <p class="hint">중지하면 저장된 대결만 전적에 반영돼요.</p></div>`;
+  } else {
+    const blocked=S.storage!=='ok'&&S.storage!=='recovered';
+    action=`<button class="primary" type="button" ${blocked?'disabled':''} data-act="noop">자동 대결 시작</button>
+      ${blocked?`<p class="hint" role="note"${rv('R6','R6 자동 대결 불가 안내(AC2-071)')}>저장 불가 상태에서는 자동 대결을 시작할 수 없어요. 저장을 복구하면 가능해요.</p>`:''}`;
+    if(run==='stopped') action+=`<div class="summary-box" role="status"${rv('R3','R3 중지 요약')}><b>중지했어요.</b> 100회 중 <b>37회</b>가 저장됐어요. · 승 15 · 패 12 · 무 10</div>`;
+    if(run==='done') action+=`<div class="summary-box" role="status"${rv('R3','R3 완료 요약')}><b>자동 대결 100회를 마쳤어요.</b> · 승 34 · 패 33 · 무 33</div>`;
+    if(run==='aborted') action+=`<div class="summary-box bad" role="alert"${rv('R3','R3 저장 실패 중단')}><b>저장 실패로 자동 대결을 중단했어요.</b> 100회 중 <b>58회</b>만 저장돼 전적에 반영됐어요. 실패한 대결은 포함되지 않아요.</div>`;
+  }
+  return `<div class="panel">
+    <div class="fld"><h3>내 손 선택</h3>
+      <div class="pills c2">${pill(S.pick==='fixed','고정 선택','noop')}${pill(S.pick==='random','매번 랜덤','noop')}</div>
+      ${S.pick==='fixed'?`<div class="pills c3">${pill(true,'✌️ 가위','noop')}${pill(false,'✊ 바위','noop')}${pill(false,'✋ 보','noop')}</div>`:''}</div>
+    <div class="fld"><h3>실행 방식</h3><div class="pills c2">${pill(S.run!=='anim',  '즉시 결과','noop')}${pill(S.run==='anim','애니메이션','noop')}</div></div>
+    <div class="fld" style="margin-bottom:14px"><h3>대결 횟수</h3><div class="pills c3">${pill(false,'10회','noop')}${pill(true,'100회','noop')}${pill(false,'1,000회','noop')}</div></div>
+    ${action}</div>`;
+}
+function resetBlock(){
+  const dis=isRun()||S.reset==='busy';
+  let extra='';
+  if(isRun()) extra=`<p class="hint" role="note"${rv('R5','R5 실행 중 초기화 불가(P-4)')}>자동 대결 중에는 초기화할 수 없어요. 먼저 중지하세요.</p>`;
+  if(S.reset==='busy') extra=`<p class="hint" role="status" id="reset-busy" tabindex="-1"${rv('R5','R5 초기화 진행')}><span class="spin" style="vertical-align:-3px;margin-right:6px" aria-hidden="true"></span>초기화하는 중이에요. 잠시 기다려 주세요.</p>`;
+  if(S.reset==='failed') extra=`<div class="note err" role="alert" style="margin:14px 0 0;text-align:left"${rv('R5','R5 초기화 실패 안내(AC2-043)')}><strong>초기화하지 못했어요</strong><p>전적과 기록은 아무것도 지워지지 않았어요. 잠시 후 다시 시도해 주세요.</p></div>`;
+  return `<div class="resetwrap"><button class="reset" type="button" ${dis?'disabled':''} data-act="reset:confirm">전적 초기화</button>${extra}</div>`;
+}
+function dialog(){
+  if(S.reset!=='confirm') return '';
+  return `<div class="overlay"><div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="dt" aria-describedby="dd"${rv('R5','R5 초기화 확인창')}>
+    <h2 id="dt">전적을 초기화할까요?</h2>
+    <p id="dd">전체 전적과 모든 대결 기록이 삭제되며 되돌릴 수 없어요. 마지막 대결 결과도 함께 지워져요.</p>
+    <div class="btns"><button type="button" data-act="reset:none">취소</button><button class="danger" type="button" data-act="reset:busy">전체 삭제</button></div></div></div>`;
+}
+function gamePage(inert=''){
+  const n=numbers();
+  const manual=S.mode==='manual'&&!isRun();
+  const dis=isRun()?'disabled':'';
+  const modeOn=isRun()?'auto':S.mode;
+  return `<main${inert}><div class="card">
+    ${storageNote()}
+    <div class="seg" role="group" aria-label="대결 모드">
+      <button type="button" aria-pressed="${modeOn==='manual'}" ${dis} data-act="mode:manual">직접 대결</button>
+      <button type="button" aria-pressed="${modeOn==='auto'}" ${dis} data-act="mode:auto">자동 대결</button></div>
+    ${arenaBlock()}
+    ${manual?`<div class="choices" role="group" aria-label="손 모양 선택"${rv('U1','U1 선택 버튼(데스크톱 흰 배경+테두리 / 모바일 채움)')}>
+      <button class="choice" type="button"><span aria-hidden="true">✌️</span>가위</button>
+      <button class="choice" type="button"><span aria-hidden="true">✊</span>바위</button>
+      <button class="choice" type="button"><span aria-hidden="true">✋</span>보</button></div>`:autoPanel()}
+    ${stats(n)}
+    ${resetBlock()}
+  </div></main>`;
+}
+
+/* ── 기록·통계 화면 ── */
+function histBody(n){
+  if(S.hist==='loading') return `<div class="sk" role="status" aria-busy="true" aria-label="기록을 불러오는 중"${rv('R9','R9 로딩 상태')}><i></i><i></i><i></i><i></i></div><p class="hint" style="text-align:center">기록을 불러오는 중이에요…</p>`;
+  if(S.hist==='error') return `<div class="state err" role="alert"${rv('R9','R9 조회 오류')}><div class="ico" aria-hidden="true">⚠️</div><div><b>기록을 불러오지 못했어요</b><br>저장소를 읽는 중 문제가 생겼어요.</div><button class="retry" type="button" data-act="storage:retrying"${rv('R8','R8 저장 다시 시도(재사용)')}>저장 다시 시도</button></div>`;
+  if(S.hist==='empty') return `<div class="state"${rv('R9','R9 빈 상태')}><div class="ico" aria-hidden="true">🗒️</div><div>아직 대결 기록이 없어요.<br>게임에서 대결하면 여기에 쌓여요.</div></div>`;
+  const rows=ROWS.map(r=>`<tr><td>${r[0]}</td><td>2026.11.05 18:30</td><td>${hand(r[1])}</td><td>${hand(r[2])}</td><td><span class="tag" data-o="${r[3]}">${RES[r[3]].tag}</span></td></tr>`).join('');
+  const cards=ROWS.map(r=>`<div class="rc"><span class="m">#${r[0]} · 2026.11.05 18:30</span><span class="p"><span>나 ${hand(r[1])}</span><span>컴퓨터 ${hand(r[2])}</span></span><span class="tag" data-o="${r[3]}">${RES[r[3]].tag}</span></div>`).join('');
+  const pos={first:[1,'이전'],mid:[4,''],last:[7,'다음']}[S.pg];
+  return `<table aria-label="전체 대결 기록"><thead><tr><th>#</th><th>시간</th><th>나</th><th>컴퓨터</th><th>결과</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="cards" aria-label="전체 대결 기록(카드)"${rv('R10','R10 모바일 카드 목록')}>${cards}</div>
+    <p class="hint" style="text-align:center">프로토타입 표시용으로 ${ROWS.length}건만 그렸어요(실제는 한 페이지 20건).</p>`;
+}
+function pager(){
+  if(S.hist!=='data') return '';
+  const p=S.pg==='first'?1:S.pg==='mid'?4:7;
+  return `<div class="pager"><button type="button" ${p===1?'disabled':''}>이전</button><span>${p} / 7</span><button type="button" ${p===7?'disabled':''}>다음</button></div>`;
+}
+function historyPage(){
+  const n=numbers(), loading=S.hist==='loading', err=S.hist==='error', skel=loading||err;
+  const val=k=>(n.fail||skel)?'—':n[k];
+  const cnt=(n.fail||skel)?'—':n.n+'회';
+  return `<main>
+  <div class="card"><h2 class="stitle">통계</h2><p class="sub">전체 누적 대결을 기준으로 계산해요.</p>
+    ${storageNote()}
+    <div class="sumbox"><div><small>총 대결</small><strong>${(n.fail||skel)?'—':n.n+'회'}</strong></div><div><small>승률 (무승부 포함)</small><strong>${(n.fail||skel)?'—':n.rate}</strong></div></div>
+    ${stats(skel?{fail:true}:n)}
+    <div class="graph" aria-hidden="true"${rv('R10','R10 비율 막대(P-10)')}>${(n.fail||skel)?'':`<i class="gw" style="width:${n.pw}%"></i><i class="gl" style="width:${n.pl}%"></i><i class="gd" style="width:${n.pd}%"></i>`}</div>
+    <div class="legend"><span style="--c:var(--g-w)">승 ${(n.fail||skel)?'—':n.lw}</span><span style="--c:var(--g-l)">패 ${(n.fail||skel)?'—':n.ll}</span><span style="--c:var(--g-d)">무 ${(n.fail||skel)?'—':n.ld}</span></div>
+    <p class="hint">승률 = 승리 횟수 ÷ 전체 대결 횟수 × 100</p></div>
+  <div class="card"><h2 class="stitle">전체 대결 기록</h2><p class="sub">수동·자동 대결을 구분하지 않고 모두 기록해요.</p>
+    <div class="cnt"><span>저장된 대결</span><strong>${cnt}</strong></div>
+    ${histBody(n)}${pager()}</div></main>`;
+}
+
+/* ── 렌더 ── */
+function readout(){
+  const parts=[];
+  const shown=(S.storage==='recovered')?'none':S.result;
+  let status;
+  if(S.page==='history') status=S.hist==='loading'?'기록을 불러오는 중이에요':S.hist==='error'?'기록을 불러오지 못했어요 (alert)':S.hist==='empty'?'아직 대결 기록이 없어요':'전체 대결 기록 표';
+  else if(S.run==='instant') status='자동 대결 100회를 처리하고 저장하는 중이에요.';
+  else if(S.run==='anim') status='자동 대결을 시작했어요. 100회 · (대결마다 낭독하지 않고, 시작·중지·완료 때만 안내)';
+  else if(S.run==='stopped') status='중지했어요. 100회 중 37회가 저장됐어요. 승 15, 패 12, 무 10';
+  else if(S.run==='done') status='자동 대결 100회를 마쳤어요. 승 34, 패 33, 무 33';
+  else if(S.run==='aborted') status='저장 실패로 자동 대결을 중단했어요. 58회만 저장됐어요. (alert)';
+  else if(shown==='none') status=S.mode==='auto'?'자동 대결 설정 후 시작하세요':'가위, 바위, 보 중 하나를 선택하세요';
+  else {const r=RES[shown];status=`나: ${HAND[r.c[0]][1]} · 컴퓨터: ${HAND[r.c[1]][1]} — ${r.t}`+(unsavedMode()?' (저장되지 않음 · 연습 대결)':'');}
+  const extra={ 'save-failed':'기록을 저장하지 못했어요. 지금부터의 직접 대결은 연습 대결이며… (role=alert)','read-failed':'저장된 전적을 불러오지 못했어요… (role=alert)',retrying:'저장소를 다시 확인하는 중이에요 (role=status)',recovered:'저장이 복구되었어요… (role=status)'}[S.storage];
+  document.getElementById('readout').innerHTML=`<b>보조기술 문장(미리보기)</b><br>결과/상태: ${esc(status)}${extra?`<br>저장 상태: ${esc(extra)}`:''}<br><span style="color:#6a7890">※ 문구는 승인된 UI 문구이며 결과 문장 형식("나: … · 컴퓨터: … — …")은 v1 UI Contract를 따릅니다.</span>`;
+}
+function renderCore(){
+  if(S.run!=='idle'&&S.mode!=='auto') S.mode='auto';
+  const f=document.getElementById('frame');
+  f.style.width=S.width+'px';
+  f.classList.toggle('show-focus',S.focus);
+  document.body.classList.toggle('show-notes',S.notes);
+  const dlgOpen=S.reset==='confirm'&&S.page==='game';
+  const inert=dlgOpen?' inert':'';                       // 확인창이 열려 있는 동안 앱 헤더·본문은 조작 불가
+  f.innerHTML=`<div class="app">${header(inert)}${S.page==='game'?gamePage(inert):historyPage()}</div>${dlgOpen?dialog():''}`;
+  const pv=document.getElementById('pv'); pv.inert=dlgOpen;   // 미리보기 도구도 잠근다(앱의 일부가 아니지만 확인창 밖 조작 차단)
+  document.getElementById('pv-lock').hidden=!dlgOpen;
+  readout();
+  // preview controls
+  const rows=document.getElementById('pv-rows');
+  rows.innerHTML=GROUPS.map(([k,l,o])=>`<div class="grp"><span>${l}</span>${o.map(([v,t])=>`<button type="button" aria-pressed="${S[k]===v}" data-pv="${k}:${v}">${t}</button>`).join('')}</div>`).join('')
+   +`<div class="grp"><span>표시</span><button type="button" aria-pressed="${S.focus}" data-pv="focus:t">포커스 링 강제 표시</button><button type="button" aria-pressed="${S.notes}" data-pv="notes:t">요소 주석 표시</button></div>`;
+}
+/* ── 포커스 관리(확인창 요구사항 구현) ─────────────────────────────────────────
+   1) 열릴 때 대화상자 안(취소)으로 이동  2) 열린 동안 안에 머무름(배경·도구 inert + Tab 순환)
+   3) Escape로 닫기  4) 닫히면 대화상자를 연 버튼으로 복원(없거나 비활성이면 "전적 초기화" 버튼)
+   다시 그려도 일반 포커스는 같은 버튼으로 유지한다. */
+let wasDlg=false, pendingRestore=false, opener=null;
+const RESET_BTN='#frame [data-act="reset:confirm"]';
+function selOf(el){
+  if(!el||!el.dataset) return null;
+  if(el.dataset.act&&el.closest('#frame')) return `#frame [data-act="${el.dataset.act}"]`;
+  if(el.dataset.pv&&el.closest('#pv')) return `#pv [data-pv="${el.dataset.pv}"]`;
+  return null;
+}
+function render(){
+  const sel=selOf(document.activeElement);
+  renderCore();
+  const isDlg=S.reset==='confirm'&&S.page==='game';
+  const q=s=>document.querySelector(s);
+  if(isDlg&&!wasDlg){ opener=sel; const c=q('.dialog [data-act="reset:none"]'); if(c) c.focus(); }   // 1)
+  else if(!isDlg&&wasDlg){ pendingRestore=true; const bz=q('#reset-busy'); if(bz) bz.focus(); }       // 진행 중이면 버튼이 비활성 → 상태 문구로 이동, 끝나면 복원
+  else if(sel&&!isDlg){ const el=q(sel); if(el&&!el.disabled) el.focus(); }
+  if(pendingRestore){                                                                                 // 4)
+    let r=opener&&q(opener); if(!r||r.disabled) r=q(RESET_BTN);
+    if(r&&!r.disabled){ r.focus(); pendingRestore=false; opener=null; }
+  }
+  wasDlg=isDlg;
+}
+document.addEventListener('keydown',e=>{
+  if(S.reset!=='confirm'||S.page!=='game') return;
+  if(e.key==='Escape'){ e.preventDefault(); S.reset='none'; render(); return; }                       // 3)
+  if(e.key==='Tab'){                                                                                   // 2)
+    const d=document.querySelector('.dialog'); if(!d) return;
+    const f=[...d.querySelectorAll('button:not(:disabled)')]; const first=f[0], last=f[f.length-1];
+    const inside=d.contains(document.activeElement);
+    if(!inside){ e.preventDefault(); (e.shiftKey?last:first).focus(); }
+    else if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+    else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+  }
+});
+document.addEventListener('click',e=>{
+  const pv=e.target.closest('[data-pv]');
+  if(pv){const [k,v]=pv.dataset.pv.split(':'); if(v==='t') S[k]=!S[k]; else {S[k]=v; if(k==='run'&&v==='aborted') S.storage='save-failed'; if(k==='storage'&&v==='retrying'){} } render(); return;}
+  const a=e.target.closest('[data-act]'); if(!a) return;
+  const [k,v]=a.dataset.act.split(':');
+  if(k==='page'||k==='mode'||k==='reset'){S[k]=v; if(k==='reset'&&v==='busy') setTimeout(()=>{if(S.reset==='busy'){S.reset='none';render();}},1500);}
+  if(k==='storage'){S.storage='retrying'; render(); setTimeout(()=>{if(S.storage==='retrying'){S.storage='recovered';render();}},1200); return;}
+  render();
+});
+render();
+</script>
+</body>
+</html>
