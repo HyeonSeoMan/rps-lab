@@ -1,4 +1,4 @@
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
@@ -192,5 +192,183 @@ describe("US2: 누적 전적 표시", () => {
       .map((l) => Number(scoreText(l as "승" | "패" | "무")?.split(" ")[1]))
       .reduce((a, b) => a + b, 0);
     expect(total).toBe(values.length);
+  });
+});
+
+describe("US3: 연속 플레이", () => {
+  const CHOICES = ["가위", "바위", "보"] as const;
+
+  const num = (label: "승" | "패" | "무") =>
+    Number(screen.getByText(new RegExp(`^${label} \\d+$`)).textContent?.split(" ")[1]);
+  const score = () => ({ win: num("승"), lose: num("패"), draw: num("무") });
+  const total = () => score().win + score().lose + score().draw;
+
+  /** 표시된 결과 문구에서 판정(win/lose/draw)을 읽는다. */
+  const shownOutcome = () => {
+    const text = status() ?? "";
+    if (text.endsWith("승리!")) return "win";
+    if (text.endsWith("패배")) return "lose";
+    if (text.endsWith("무승부")) return "draw";
+    return null;
+  };
+
+  /** 결정적 의사난수열 (테스트 전용 LCG) */
+  const lcg = (seed: number) => () => {
+    seed = (seed * 1664525 + 1013904223) % 4294967296;
+    return seed / 4294967296;
+  };
+
+  it("AC-008: 다음 라운드를 누르면 결과가 갱신되고 이전 라운드 결과는 남지 않는다", async () => {
+    const values = [0, 0.9]; // 첫 라운드: 컴퓨터 바위, 둘째: 컴퓨터 가위
+    let i = 0;
+    const user = userEvent.setup();
+    renderGame(() => values[i++]);
+
+    await user.click(button("가위"));
+    expect(status()).toBe("나: 가위 · 컴퓨터: 바위 — 패배");
+
+    await user.click(button("보"));
+    expect(status()).toBe("나: 보 · 컴퓨터: 가위 — 패배");
+    expect(document.body.textContent).not.toContain("나: 가위 · 컴퓨터: 바위");
+    expect(screen.getAllByRole("status")).toHaveLength(1); // 이력 목록 없음
+    expect(screen.getAllByRole("listitem")).toHaveLength(3); // 전적 3항목뿐
+  });
+
+  it("AC-009: 결과 표시 후에도 이어서 플레이하면 전적이 계속 누적된다", async () => {
+    const user = userEvent.setup();
+    renderGame(lcg(7));
+    for (let n = 1; n <= 12; n++) {
+      await user.click(button(CHOICES[n % 3]));
+      expect(total()).toBe(n);
+    }
+  });
+
+  describe("AC-014: 입력 1회 = 라운드 1회", () => {
+    const methods: [string, (u: ReturnType<typeof userEvent.setup>) => Promise<void>][] = [
+      ["마우스 클릭", (u) => u.click(button("바위"))],
+      [
+        "터치 탭",
+        (u) =>
+          u.pointer([{ keys: "[TouchA>]", target: button("바위") }, { keys: "[/TouchA]" }]),
+      ],
+      [
+        "키보드 Enter",
+        async (u) => {
+          button("바위").focus();
+          await u.keyboard("{Enter}");
+        },
+      ],
+      [
+        "키보드 Space",
+        async (u) => {
+          button("바위").focus();
+          await u.keyboard(" ");
+        },
+      ],
+    ];
+
+    it.each(methods)("%s 1회: 컴퓨터 선택 1회 호출, 전적 합계 정확히 +1", async (_name, act1) => {
+      const random = vi.fn(() => 0.4);
+      const user = userEvent.setup();
+      renderGame(random);
+      await act1(user);
+      expect(random).toHaveBeenCalledTimes(1);
+      expect(total()).toBe(1);
+      expect(shownOutcome()).toBe("lose"); // 바위 vs 보
+    });
+  });
+
+  describe("AC-022: 빠른 연속 입력은 모두 독립적인 라운드로 처리된다", () => {
+    it("대기 없이 연속 클릭 N회 → 컴퓨터 선택 N회, 합계 N, 마지막 라운드 표시", async () => {
+      const N = 5;
+      const values = [0, 0.4, 0.9, 0.4, 0]; // 컴퓨터: 바위 보 가위 보 바위
+      let i = 0;
+      const random = vi.fn(() => values[i++]);
+      const user = userEvent.setup({ delay: null });
+      renderGame(random);
+      for (let n = 0; n < N; n++) await user.click(button("가위"));
+      expect(random).toHaveBeenCalledTimes(N);
+      expect(total()).toBe(N);
+      // 가위 vs [바위 보 가위 보 바위] = 패 승 무 승 패
+      expect(score()).toEqual({ win: 2, lose: 2, draw: 1 });
+      expect(status()).toBe("나: 가위 · 컴퓨터: 바위 — 패배");
+    });
+
+    it("클릭·터치·Enter·Space를 섞어 연속 입력해도 4회 모두 처리된다", async () => {
+      const random = vi.fn(() => 0.9);
+      const user = userEvent.setup({ delay: null });
+      renderGame(random);
+      await user.click(button("가위"));
+      await user.pointer([{ keys: "[TouchA>]", target: button("바위") }, { keys: "[/TouchA]" }]);
+      button("보").focus();
+      await user.keyboard("{Enter}");
+      await user.keyboard(" ");
+      expect(random).toHaveBeenCalledTimes(4);
+      expect(total()).toBe(4);
+    });
+
+    it("더블 클릭은 입력 2회이므로 2라운드로 처리된다", async () => {
+      const random = vi.fn(() => 0);
+      const user = userEvent.setup({ delay: null });
+      renderGame(random);
+      await user.dblClick(button("바위"));
+      expect(random).toHaveBeenCalledTimes(2);
+      expect(total()).toBe(2);
+    });
+
+    it("같은 틱에 발생한 클릭 5회(동일 act 안)도 모두 처리된다", () => {
+      const random = vi.fn(() => 0.4);
+      renderGame(random);
+      const target = button("보");
+      act(() => {
+        for (let n = 0; n < 5; n++) target.click();
+      });
+      expect(random).toHaveBeenCalledTimes(5);
+      expect(total()).toBe(5);
+      expect(score()).toEqual({ win: 0, lose: 0, draw: 5 });
+    });
+
+    it("타이머가 전혀 진행되지 않아도(시간 기반 제한 없음) 연속 입력이 모두 처리된다", () => {
+      // user-event의 비동기 래퍼는 Vitest 가짜 타이머를 감지하지 못하므로 동기 fireEvent를 쓴다.
+      vi.useFakeTimers();
+      try {
+        const random = vi.fn(() => 0);
+        renderGame(random);
+        fireEvent.click(button("가위"));
+        fireEvent.click(button("가위"));
+        fireEvent.click(button("가위"));
+        expect(random).toHaveBeenCalledTimes(3);
+        expect(total()).toBe(3);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("연속 입력 40회 동안 매번 결과 표시와 누적 전적이 일치하고 입력이 차단되지 않는다", async () => {
+      const random = vi.fn(lcg(2024));
+      const user = userEvent.setup({ delay: null });
+      renderGame(random);
+
+      let prev = score();
+      for (let n = 1; n <= 40; n++) {
+        await user.click(button(CHOICES[(n * 5) % 3]));
+        const now = score();
+        const shown = shownOutcome();
+        // 표시된 판정에 해당하는 항목만 정확히 1 증가했다.
+        expect(shown).not.toBeNull();
+        for (const key of ["win", "lose", "draw"] as const) {
+          expect(now[key] - prev[key]).toBe(key === shown ? 1 : 0);
+        }
+        expect(total()).toBe(n);
+        // 입력 차단(disabled / aria-disabled)이 없다.
+        for (const name of CHOICES) {
+          const el = button(name) as HTMLButtonElement;
+          expect(el.disabled).toBe(false);
+          expect(el.getAttribute("aria-disabled")).toBeNull();
+        }
+        prev = now;
+      }
+      expect(random).toHaveBeenCalledTimes(40);
+    });
   });
 });
