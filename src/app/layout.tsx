@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: "컴퓨터와 즐기는 가위바위보",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko">
       <body>
