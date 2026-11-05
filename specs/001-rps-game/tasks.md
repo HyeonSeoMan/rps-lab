@@ -150,7 +150,7 @@
 **Goal**: 같은 브라우저에서 전적 유지, 즉시 초기화, 저장소 예외에도 게임 정상 동작, 잘못된 0/0/0·덮어쓰기 없음.
 **Covers**: FR-007, FR-008, FR-010(서버 저장 없음), FR-012(초기화 버튼) / AC-017~AC-021, AC-013(초기화 버튼 부분), AC-005(복원 포함)
 
-- [ ] T020 [US5] `src/components/Game.test.tsx`에 US5 테스트를 추가한다.
+- [X] T020 [US5] `src/components/Game.test.tsx`에 US5 테스트를 추가한다.
   - `AC-017`: (a) `react-dom/server`의 `renderToString(<Game />)` 결과에 전적 값("승 0" 등)과 버튼이 없음(복원 전 입력 불가). (b) `localStorage`에 `{"wins":5,"losses":3,"draws":2}`를 넣고 `hydrateRoot`(서버 HTML 위)로 하이드레이션 → 최종 "승 5/패 3/무 2"이며 `MutationObserver`로 기록한 모든 중간 텍스트에 "승 0"이 **한 번도 나타나지 않음**. (c) 클라이언트 렌더·언마운트 후 재마운트해도 전적 유지, 결과 영역은 초기 안내 문구.
   - `AC-018`: 초기화 클릭 시 즉시 0/0/0, status가 초기 안내 문구로 복귀, `window.confirm`이 호출되지 않음.
   - `AC-019`: 초기화 후 재마운트해도 0/0/0 (저장값이 0).
@@ -159,9 +159,9 @@
   - 보조: 유효 저장값 마운트 후 상호작용 전 `setItem` 0회; `<StrictMode>`에서도 동일(복원, 마운트 시 `setItem` 0회, 연속 입력 합계 정확); 5/3/2 복원 직후 빠른 3회 입력 → 합계 13.
   - `AC-013`(초기화 버튼): Tab으로 "전적 초기화" 버튼 포커스 → Enter/Space로 초기화.
   - 완료 기준: `npm test`에서 새 테스트가 Red(복원·초기화 미구현). 제목에 해당 AC ID 포함.
-- [ ] T021 [US5] (T010, T020 후) `GameBoard.tsx`에 복원·저장을 추가한다 — `const [loaded] = useState(() => loadScore(getBrowserStorage()))`, `useReducer(gameReducer, loaded.score, createInitialState)`. 저장 `useEffect`(deps `[state.score]`)는 `loaded.writable && state.score !== loaded.score`일 때만 `saveScore(storage, state.score)`를 호출(마운트 직후 쓰기 없음, 읽기 예외 시 쓰기 없음). 복원용 effect·`setState`·`dispatch`를 쓰지 않는다. `eslint-disable` 금지.
+- [X] T021 [US5] (T010, T020 후) `GameBoard.tsx`에 복원·저장을 추가한다 — `const [loaded] = useState(() => loadScore(getBrowserStorage()))`, `useReducer(gameReducer, loaded.score, createInitialState)`. 저장 `useEffect`(deps `[state.score]`)는 `loaded.writable && state.score !== loaded.score`일 때만 `saveScore(storage, state.score)`를 호출(마운트 직후 쓰기 없음, 읽기 예외 시 쓰기 없음). 복원용 effect·`setState`·`dispatch`를 쓰지 않는다. `eslint-disable` 금지.
   - 완료 기준: AC-017, AC-020, AC-021 및 보조 테스트 통과. `npm run lint` 경고 0.
-- [ ] T022 [US5] (T019, T021 후) `GameBoard.tsx`에 "전적 초기화" 버튼을 추가한다 — 네이티브 `<button>`, `onClick`에서 `dispatch({type:'reset'})`, 확인 대화상자·undo 없음, T019의 버튼 공통 클래스 사용.
+- [X] T022 [US5] (T019, T021 후) `GameBoard.tsx`에 "전적 초기화" 버튼을 추가한다 — 네이티브 `<button>`, `onClick`에서 `dispatch({type:'reset'})`, 확인 대화상자·undo 없음, T019의 버튼 공통 클래스 사용.
   - 완료 기준: AC-018, AC-019, AC-013(초기화 버튼) 통과. 전체 `npm test` 통과.
 
 **검토 지점 7**: 변경 파일 보고.

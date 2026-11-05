@@ -263,6 +263,17 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* ---------- 전적 초기화 ---------- */
+
+/* 보조 동작이므로 선택 버튼보다 작게 하되 최소 터치 영역(.button의 44x44)은 유지한다. */
+.reset {
+  align-self: center;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.9rem;
+  color: #475569;
+  border-radius: 999px;
+}
+
 @media (max-width: 380px) {
   .game {
     width: calc(100% - 20px);

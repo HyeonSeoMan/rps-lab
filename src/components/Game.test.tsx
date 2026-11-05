@@ -1,5 +1,6 @@
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { Profiler, StrictMode } from "react";
 import { hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -11,7 +12,22 @@ beforeEach(() => {
   window.localStorage.clear();
 });
 
-afterEach(() => {
+// 하이드레이션 테스트가 직접 만든 컨테이너·루트. 단언이 실패해도 afterEach가 항상 정리한다.
+const manualContainers: HTMLElement[] = [];
+const manualRoots: ReturnType<typeof hydrateRoot>[] = [];
+
+function trackContainer(): HTMLElement {
+  const container = document.createElement("div");
+  document.body.append(container);
+  manualContainers.push(container);
+  return container;
+}
+
+afterEach(async () => {
+  for (const root of manualRoots.splice(0)) {
+    await act(async () => root.unmount());
+  }
+  for (const container of manualContainers.splice(0)) container.remove();
   cleanup();
   vi.restoreAllMocks();
 });
@@ -127,22 +143,17 @@ describe("복원 게이트 (서버 렌더·하이드레이션)", () => {
 
   it("하이드레이션 후에는 버튼이 나타나고 불일치 오류가 없다", async () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    const container = document.createElement("div");
-    document.body.append(container);
+    const container = trackContainer();
     container.innerHTML = renderToString(<Game random={() => 0} />);
     expect(container.querySelectorAll("button")).toHaveLength(0);
 
-    let root!: ReturnType<typeof hydrateRoot>;
     await act(async () => {
-      root = hydrateRoot(container, <Game random={() => 0} />);
+      manualRoots.push(hydrateRoot(container, <Game random={() => 0} />));
     });
 
-    expect(container.querySelectorAll("button")).toHaveLength(3);
+    expect(container.querySelectorAll("button")).toHaveLength(4); // 선택 3 + 전적 초기화 1
     expect(container.querySelector('[role="status"]')?.textContent).toBe(INITIAL_MESSAGE);
     expect(errorSpy).not.toHaveBeenCalled();
-
-    await act(async () => root.unmount());
-    container.remove();
   });
 });
 
@@ -546,5 +557,341 @@ describe("UI 개선: 좌우 대결 구조 (사용자 | 결과 | 컴퓨터)", () 
     expect(screen.getByRole("group", { name: "손 모양 선택" })).toBeTruthy();
     expect(screen.getByRole("list", { name: "누적 전적" })).toBeTruthy();
     expect(scoreItem("승")).toBe("승 0");
+  });
+});
+
+describe("US5: 전적 유지와 초기화", () => {
+  const KEY = "rps-lab:score";
+  const store = (wins: number, losses: number, draws: number) =>
+    window.localStorage.setItem(KEY, JSON.stringify({ wins, losses, draws }));
+  const rawStored = () => window.localStorage.getItem(KEY);
+  const line = () => `${scoreItem("승")} ${scoreItem("패")} ${scoreItem("무")}`;
+  const sumOf = () => ["승", "패", "무"].reduce((a, l) => a + Number(scoreItem(l).split(" ")[1]), 0);
+  /** 새로고침 시뮬레이션: 언마운트 후 다시 마운트 */
+  const reload = (random: () => number = () => 0) => {
+    cleanup();
+    return renderGame(random);
+  };
+  const noConsoleErrors = () => vi.spyOn(console, "error").mockImplementation(() => {});
+
+  describe("AC-017: 복원", () => {
+    it("서버 렌더 HTML에는 전적 값과 버튼이 없다(복원 전 입력 불가, 잘못된 0/0/0 없음)", () => {
+      store(5, 3, 2);
+      const html = renderToString(<Game />);
+      expect(html).not.toContain("<button");
+      expect(html).not.toContain("승");
+      expect(html).not.toContain("누적 전적");
+    });
+
+    it("하이드레이션: 저장값 5/3/2가 표시되고 중간 상태에 '승 0'이 한 번도 나타나지 않는다", async () => {
+      store(5, 3, 2);
+      const errorSpy = noConsoleErrors();
+      const container = trackContainer();
+      container.innerHTML = renderToString(<Game random={() => 0} />);
+
+      const snapshots: string[] = [container.textContent ?? ""];
+      const observer = new MutationObserver(() => snapshots.push(container.textContent ?? ""));
+      observer.observe(container, { childList: true, subtree: true, characterData: true });
+
+      await act(async () => {
+        manualRoots.push(hydrateRoot(container, <Game random={() => 0} />));
+      });
+      snapshots.push(container.textContent ?? "");
+      observer.disconnect();
+
+      const items = [...container.querySelectorAll("li")].map((li) => li.textContent);
+      expect(items).toEqual(["승 5", "패 3", "무 2"]);
+      expect(snapshots.some((t) => t.includes("승 0"))).toBe(false);
+      expect(errorSpy).not.toHaveBeenCalled();
+    });
+
+    it("클라이언트 렌더: 저장값이 첫 커밋에 바로 표시된다(커밋 1회, 0/0/0 중간 상태 없음)", () => {
+      store(5, 3, 2);
+      let commits = 0;
+      render(
+        <Profiler id="game" onRender={() => commits++}>
+          <Game random={() => 0} />
+        </Profiler>,
+      );
+      expect(commits).toBe(1);
+      expect(line()).toBe("승 5 패 3 무 2");
+    });
+
+    it("라운드를 진행한 뒤 새로고침(재마운트)해도 전적이 정확히 복원된다", async () => {
+      const user = userEvent.setup();
+      const values = [0.4, 0.4, 0, 0.9]; // 가위 기준: 승 승 패 무
+      let i = 0;
+      renderGame(() => values[i++]);
+      for (let n = 0; n < 4; n++) await user.click(button("가위"));
+      expect(line()).toBe("승 2 패 1 무 1");
+      expect(JSON.parse(rawStored() as string)).toEqual({ wins: 2, losses: 1, draws: 1 });
+
+      reload();
+      expect(line()).toBe("승 2 패 1 무 1");
+    });
+
+    it("마지막 라운드 결과는 새로고침 후 복원되지 않는다(초기 안내 문구, '?' 표시)", async () => {
+      const user = userEvent.setup();
+      renderGame(() => 0);
+      await user.click(button("가위"));
+      expect(status()).toBe("나: 가위 · 컴퓨터: 바위 — 패배");
+      expect(rawStored()).not.toContain("lastRound");
+
+      reload();
+      expect(status()).toBe(INITIAL_MESSAGE);
+      expect(within(screen.getByRole("region", { name: "최근 라운드 결과" })).getAllByText("?")).toHaveLength(2);
+      expect(line()).toBe("승 0 패 1 무 0");
+    });
+  });
+
+  describe("AC-018 / AC-019: 초기화", () => {
+    it("AC-018: 초기화 버튼은 확인 절차 없이 즉시 0/0/0과 초기 안내 문구로 되돌린다", async () => {
+      const confirmSpy = vi.spyOn(window, "confirm");
+      const user = userEvent.setup();
+      renderGame(() => 0);
+      await user.click(button("가위"));
+      await user.click(button("바위"));
+      expect(sumOf()).toBe(2);
+
+      await user.click(button("전적 초기화"));
+      expect(line()).toBe("승 0 패 0 무 0");
+      expect(status()).toBe(INITIAL_MESSAGE);
+      const region = screen.getByRole("region", { name: "최근 라운드 결과" });
+      expect(within(region).getAllByText("?")).toHaveLength(2);
+      expect(confirmSpy).not.toHaveBeenCalled();
+    });
+
+    it("AC-019: 초기화한 전적은 새로고침 후에도 0/0/0이고 저장값도 0이다", async () => {
+      store(5, 3, 2);
+      const user = userEvent.setup();
+      renderGame();
+      expect(line()).toBe("승 5 패 3 무 2");
+      await user.click(button("전적 초기화"));
+      expect(JSON.parse(rawStored() as string)).toEqual({ wins: 0, losses: 0, draws: 0 });
+
+      reload();
+      expect(line()).toBe("승 0 패 0 무 0");
+    });
+
+    it("초기화 직후 다음 라운드는 0부터 정확히 누적되고 저장된다", async () => {
+      store(5, 3, 2);
+      const user = userEvent.setup();
+      renderGame(() => 0.4); // 가위 vs 보 → 승
+      await user.click(button("전적 초기화"));
+      await user.click(button("가위"));
+      expect(line()).toBe("승 1 패 0 무 0");
+      expect(JSON.parse(rawStored() as string)).toEqual({ wins: 1, losses: 0, draws: 0 });
+    });
+
+    it("이미 0/0/0인 상태에서 초기화해도 문제가 없고 0이 저장된다", async () => {
+      const user = userEvent.setup();
+      renderGame();
+      await user.click(button("전적 초기화"));
+      expect(line()).toBe("승 0 패 0 무 0");
+      expect(JSON.parse(rawStored() as string)).toEqual({ wins: 0, losses: 0, draws: 0 });
+    });
+  });
+
+  describe("AC-020: 손상된 저장값 (승인된 저장소 정책)", () => {
+    it.each([
+      ["잘못된 JSON", "abc"],
+      ["빈 문자열", ""],
+      ["JSON null", "null"],
+      ["배열", "[1,2,3]"],
+      ["음수", '{"wins":-1,"losses":0,"draws":0}'],
+      ["소수", '{"wins":1.5,"losses":0,"draws":0}'],
+      ["문자열 값", '{"wins":"5","losses":0,"draws":0}'],
+      ["키 누락", '{"wins":5,"losses":3}'],
+    ])("%s → 0/0/0으로 시작하고, 한 라운드 후 저장값이 유효한 JSON으로 대체된다", async (_label, raw) => {
+      window.localStorage.setItem(KEY, raw);
+      const errorSpy = noConsoleErrors();
+      const user = userEvent.setup();
+      renderGame(() => 0.4);
+      expect(line()).toBe("승 0 패 0 무 0");
+      expect(rawStored()).toBe(raw); // 상호작용 전에는 덮어쓰지 않는다
+
+      await user.click(button("가위"));
+      expect(line()).toBe("승 1 패 0 무 0");
+      expect(JSON.parse(rawStored() as string)).toEqual({ wins: 1, losses: 0, draws: 0 });
+      expect(errorSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("AC-020 / AC-021: 저장소 예외에도 게임은 계속된다", () => {
+    it("getItem이 예외를 던져도 0/0/0으로 시작해 플레이할 수 있고, 유효한 기존 데이터를 덮어쓰지 않는다", async () => {
+      store(5, 3, 2);
+      const realGet = Storage.prototype.getItem;
+      const errorSpy = noConsoleErrors();
+      vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+        throw new Error("blocked");
+      });
+      const setSpy = vi.spyOn(Storage.prototype, "setItem");
+      const user = userEvent.setup();
+      renderGame(() => 0.4);
+
+      expect(line()).toBe("승 0 패 0 무 0");
+      await user.click(button("가위"));
+      await user.click(button("가위"));
+      expect(line()).toBe("승 2 패 0 무 0");
+      await user.click(button("전적 초기화"));
+      expect(line()).toBe("승 0 패 0 무 0");
+
+      expect(setSpy).not.toHaveBeenCalled();
+      expect(realGet.call(window.localStorage, KEY)).toBe('{"wins":5,"losses":3,"draws":2}');
+      expect(errorSpy).not.toHaveBeenCalled();
+    });
+
+    it("setItem이 예외를 던져도 전적이 정상 누적되고 오류가 화면에 드러나지 않는다", async () => {
+      const errorSpy = noConsoleErrors();
+      vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+        throw new DOMException("quota", "QuotaExceededError");
+      });
+      const user = userEvent.setup();
+      renderGame(() => 0.4);
+      await user.click(button("가위"));
+      await user.click(button("가위"));
+      await user.click(button("가위"));
+      expect(line()).toBe("승 3 패 0 무 0");
+      await user.click(button("전적 초기화"));
+      expect(line()).toBe("승 0 패 0 무 0");
+      expect(errorSpy).not.toHaveBeenCalled();
+    });
+
+    it("window.localStorage getter가 예외를 던져도 플레이와 초기화가 정상 동작한다", async () => {
+      const errorSpy = noConsoleErrors();
+      vi.spyOn(window, "localStorage", "get").mockImplementation(() => {
+        throw new DOMException("denied", "SecurityError");
+      });
+      const user = userEvent.setup();
+      renderGame(() => 0.9); // 가위 vs 가위 → 무
+      expect(line()).toBe("승 0 패 0 무 0");
+      await user.click(button("가위"));
+      await user.click(button("가위"));
+      expect(line()).toBe("승 0 패 0 무 2");
+      await user.click(button("전적 초기화"));
+      expect(line()).toBe("승 0 패 0 무 0");
+      expect(errorSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("저장 시점과 StrictMode", () => {
+    it("유효한 저장값 마운트 후 상호작용 전에는 setItem을 호출하지 않는다", () => {
+      store(5, 3, 2);
+      const setSpy = vi.spyOn(Storage.prototype, "setItem");
+      renderGame();
+      expect(line()).toBe("승 5 패 3 무 2");
+      expect(setSpy).not.toHaveBeenCalled();
+      expect(rawStored()).toBe('{"wins":5,"losses":3,"draws":2}');
+    });
+
+    it("StrictMode: 저장값을 복원하고 마운트만으로는 쓰지 않으며 기존 값을 덮어쓰지 않는다", () => {
+      store(5, 3, 2);
+      const setSpy = vi.spyOn(Storage.prototype, "setItem");
+      render(
+        <StrictMode>
+          <Game random={() => 0} />
+        </StrictMode>,
+      );
+      expect(line()).toBe("승 5 패 3 무 2");
+      expect(setSpy).not.toHaveBeenCalled();
+      expect(rawStored()).toBe('{"wins":5,"losses":3,"draws":2}');
+    });
+
+    it("StrictMode: 라운드 N회 → 저장 N회(중복 저장 없음), 최종 저장값은 화면과 일치한다", async () => {
+      store(5, 3, 2);
+      const setSpy = vi.spyOn(Storage.prototype, "setItem");
+      const user = userEvent.setup({ delay: null });
+      render(
+        <StrictMode>
+          <Game random={() => 0.4} />
+        </StrictMode>,
+      );
+      for (let n = 0; n < 4; n++) await user.click(button("가위")); // 가위 vs 보 → 승
+      expect(line()).toBe("승 9 패 3 무 2");
+      expect(setSpy).toHaveBeenCalledTimes(4);
+      expect(JSON.parse(rawStored() as string)).toEqual({ wins: 9, losses: 3, draws: 2 });
+    });
+
+    it("StrictMode: 초기화는 0/0/0을 한 번 저장하고 새로고침 후에도 유지된다", async () => {
+      store(5, 3, 2);
+      const setSpy = vi.spyOn(Storage.prototype, "setItem");
+      const user = userEvent.setup();
+      render(
+        <StrictMode>
+          <Game random={() => 0} />
+        </StrictMode>,
+      );
+      await user.click(button("전적 초기화"));
+      expect(setSpy).toHaveBeenCalledTimes(1);
+      expect(line()).toBe("승 0 패 0 무 0");
+
+      cleanup();
+      render(
+        <StrictMode>
+          <Game random={() => 0} />
+        </StrictMode>,
+      );
+      expect(line()).toBe("승 0 패 0 무 0");
+    });
+
+    it("복원 직후 빠른 연속 입력 3회 → 복원값 5/3/2에 정확히 +3 (합계 13)", async () => {
+      store(5, 3, 2);
+      const random = vi.fn(() => 0);
+      const user = userEvent.setup({ delay: null });
+      renderGame(random);
+      await user.click(button("가위"));
+      await user.click(button("바위"));
+      await user.click(button("보"));
+      expect(random).toHaveBeenCalledTimes(3);
+      expect(sumOf()).toBe(13);
+    });
+  });
+
+  describe("AC-013: 초기화 버튼의 키보드 조작", () => {
+    it("Tab 순서는 가위 → 바위 → 보 → 전적 초기화이고 Shift+Tab은 역순이다", async () => {
+      const user = userEvent.setup();
+      renderGame();
+      await user.tab();
+      expect(document.activeElement).toBe(button("가위"));
+      await user.tab();
+      expect(document.activeElement).toBe(button("바위"));
+      await user.tab();
+      expect(document.activeElement).toBe(button("보"));
+      await user.tab();
+      expect(document.activeElement).toBe(button("전적 초기화"));
+      await user.tab({ shift: true });
+      expect(document.activeElement).toBe(button("보"));
+    });
+
+    it("초기화 버튼은 네이티브 button이며 비활성화되지 않고 tabindex 조작이 없다", () => {
+      renderGame();
+      const el = button("전적 초기화") as HTMLButtonElement;
+      expect(el.tagName).toBe("BUTTON");
+      expect(el.type).toBe("button");
+      expect(el.disabled).toBe(false);
+      expect(el.hasAttribute("tabindex")).toBe(false);
+    });
+
+    it("Enter로 초기화할 수 있다(입력 1회 = 초기화 1회)", async () => {
+      store(5, 3, 2);
+      const setSpy = vi.spyOn(Storage.prototype, "setItem");
+      const user = userEvent.setup();
+      renderGame();
+      for (let n = 0; n < 4; n++) await user.tab();
+      expect(document.activeElement).toBe(button("전적 초기화"));
+      await user.keyboard("{Enter}");
+      expect(line()).toBe("승 0 패 0 무 0");
+      expect(setSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it("Space로 초기화할 수 있다", async () => {
+      store(5, 3, 2);
+      const user = userEvent.setup();
+      renderGame();
+      for (let n = 0; n < 4; n++) await user.tab();
+      await user.keyboard(" ");
+      expect(line()).toBe("승 0 패 0 무 0");
+      expect(status()).toBe(INITIAL_MESSAGE);
+    });
   });
 });

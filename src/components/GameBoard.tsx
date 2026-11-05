@@ -1,11 +1,10 @@
 "use client";
 
-import { useReducer } from "react";
-import { createInitialState, gameReducer, type Score } from "@/lib/game-state";
+import { useEffect, useReducer, useState } from "react";
+import { createInitialState, gameReducer } from "@/lib/game-state";
 import { pickComputerChoice, type Choice, type Outcome } from "@/lib/rps";
+import { getBrowserStorage, loadScore, saveScore } from "@/lib/score-storage";
 import styles from "./Game.module.css";
-
-const INITIAL_SCORE: Score = { wins: 0, losses: 0, draws: 0 };
 
 const CHOICE_LABEL: Record<Choice, string> = {
   scissors: "가위",
@@ -32,7 +31,19 @@ const GUIDE_MESSAGE = "가위, 바위, 보 중 하나를 선택하세요";
 type Props = { random?: () => number };
 
 export default function GameBoard({ random = Math.random }: Props) {
-  const [state, dispatch] = useReducer(gameReducer, INITIAL_SCORE, createInitialState);
+  // 마운트 시 한 번 동기적으로 저장값을 읽어 초기 상태로 쓴다. 이 컴포넌트는 클라이언트 준비 게이트(Game)
+  // 뒤에서만 마운트되므로 서버 렌더·하이드레이션과 충돌하지 않고, 복원 전 0/0/0이 표시되지 않는다.
+  const [loaded] = useState(() => loadScore(getBrowserStorage()));
+  const [state, dispatch] = useReducer(gameReducer, loaded.score, createInitialState);
+
+  // 전적이 바뀐 경우에만 저장한다(외부 시스템 localStorage와의 동기화).
+  // 마운트 직후(복원값 그대로)에는 쓰지 않고, 읽기에 실패한 세션(writable=false)에서는 기존 데이터를
+  // 덮어쓰지 않도록 저장하지 않는다. reducer가 play/reset마다 새 Score 객체를 반환하는 것이 전제다.
+  useEffect(() => {
+    if (!loaded.writable || state.score === loaded.score) return;
+    const storage = getBrowserStorage();
+    if (storage) saveScore(storage, state.score);
+  }, [loaded, state.score]);
 
   function play(user: Choice) {
     dispatch({ type: "play", user, computer: pickComputerChoice(random) });
@@ -100,6 +111,14 @@ export default function GameBoard({ random = Math.random }: Props) {
           <small>무</small> <strong>{state.score.draws}</strong>
         </li>
       </ul>
+
+      <button
+        type="button"
+        className={`${styles.button} ${styles.reset}`}
+        onClick={() => dispatch({ type: "reset" })}
+      >
+        전적 초기화
+      </button>
     </div>
   );
 }
