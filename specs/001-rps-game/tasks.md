@@ -14,18 +14,20 @@
 4. **`eslint-disable` 금지**: lint 경고는 설계를 먼저 재검토하여 해결한다. 우회가 불가피하면 보고한다.
 5. **의존성 최소화**: Plan에 명시되지 않은 패키지를 추가하지 않는다. 필요하면 먼저 보고한다.
 6. **작은 단위 검증**: 각 작업 완료 시 해당 테스트/명령으로 기준을 확인한다.
+7. **Phase별 보고 후 정지**: 각 Phase 종료 시 (완료 작업 ID, 변경 파일, 테스트·품질 게이트 결과, 발견한 문제와 해결, 다음 Phase 진행 가능 여부)를 보고하고, **사용자 확인 전에는 다음 Phase로 진행하지 않는다.**
 
 ## Phase 1: Setup — 프로젝트 초기화
 
 **Purpose**: Next.js(App Router, React, TypeScript)와 테스트 도구 준비. 다른 모든 Phase에 선행.
 
-- [ ] T001 저장소 루트(`/Users/hsjeong/Documents/harness-study/rps-lab`)에 Next.js 앱을 생성한다 — 옵션: TypeScript, ESLint, App Router, `src/` 디렉터리, **Tailwind 제외**, npm, import alias `@/*`. 루트에 `.claude/`, `.specify/`, `specs/`가 있어 생성기가 충돌하면 스크래치 디렉터리에 생성한 뒤 해당 폴더를 **덮어쓰지 않고** 복사한다.
-  - 완료 기준: `package.json`, `tsconfig.json`(strict), ESLint 설정, `src/app/`이 존재. `.claude/`, `.specify/`, `specs/` 내용이 변경되지 않음. 생성된 `.gitignore`에 `node_modules`, `.next`가 포함(SourceTree에 불필요한 파일이 보이지 않도록). 생성 결과가 Plan(P-2)과 어긋나면 **보고**.
-- [ ] T002 (T001 후) 기본 보일러플레이트를 정리한다 — `src/app/layout.tsx`: `lang="ko"`, 제목 "가위바위보". `src/app/page.tsx`는 임시로 비워둔다(T014에서 `<Game />` 연결). `src/app/globals.css`: 최소 리셋/기본 변수만 남김. 기본 예제 이미지·CSS Module 등 불필요한 파일 삭제.
+- [X] T001 저장소 루트(`/Users/hsjeong/Documents/harness-study/rps-lab`)에 Next.js 앱을 생성한다 — 옵션: TypeScript, ESLint, App Router, `src/` 디렉터리, **Tailwind 제외**, npm, import alias `@/*`. 루트에 `.claude/`, `.specify/`, `specs/`가 있어 생성기가 충돌하면 스크래치 디렉터리에 생성한 뒤 해당 폴더를 **덮어쓰지 않고** 복사한다.
+  - **사전 보존 절차**: (1) 스캐폴딩 전에 `.claude/`, `.specify/`, `specs/` 및 루트의 기존 파일 전체의 체크섬 목록(`find … -type f | sort | xargs shasum`)을 스크래치 디렉터리에 저장한다. (2) 생성 결과와 기존 루트 파일 사이의 **이름 충돌 목록**(`.gitignore` 등)을 만들어 확인한다. (3) 충돌 파일은 덮어쓰지 않고 병합 방식을 정해 처리하되, Spec Kit 파일이 영향받는 경우 **진행 전에 보고**한다. (4) 스캐폴딩 후 체크섬을 다시 계산해 비교한다.
+  - 완료 기준: `package.json`, `tsconfig.json`(strict), ESLint 설정, `src/app/`이 존재. 스캐폴딩 전후 체크섬 비교에서 `.claude/`, `.specify/`, `specs/`(및 기존 루트 파일)가 **한 파일도 변경·삭제되지 않음**. 충돌 목록과 처리 결과를 Phase 1 보고에 포함. 생성된 `.gitignore`에 `node_modules`, `.next`가 포함(SourceTree에 불필요한 파일이 보이지 않도록). 생성 결과가 Plan(P-2)과 어긋나면 **보고**.
+- [X] T002 (T001 후) 기본 보일러플레이트를 정리한다 — `src/app/layout.tsx`: `lang="ko"`, 제목 "가위바위보". `src/app/page.tsx`는 임시로 비워둔다(T014에서 `<Game />` 연결). `src/app/globals.css`: 최소 리셋/기본 변수만 남김. 기본 예제 이미지·CSS Module 등 불필요한 파일 삭제.
   - 완료 기준: 예제 콘텐츠·미사용 자산이 남아 있지 않음. `npm run build`가 성공하고 출력 HTML에 viewport 메타가 포함됨.
-- [ ] T003 (T001 후) 테스트 의존성을 devDependencies로 설치한다: `vitest`, `@vitejs/plugin-react`, `jsdom`, `@testing-library/react`, `@testing-library/dom`(peer), `@testing-library/user-event`. `package.json` scripts에 `"typecheck": "tsc --noEmit"`, `"test": "vitest run"`을 추가한다(`lint`는 스캐폴드 제공 스크립트 확인).
+- [X] T003 (T001 후) 테스트 의존성을 devDependencies로 설치한다: `vitest`, `@vitejs/plugin-react`, `jsdom`, `@testing-library/react`, `@testing-library/dom`(peer), `@testing-library/user-event`. `package.json` scripts에 `"typecheck": "tsc --noEmit"`, `"test": "vitest run"`을 추가한다(`lint`는 스캐폴드 제공 스크립트 확인).
   - 완료 기준: 위 패키지 외 추가 설치 없음. `npm run typecheck`가 오류 없이 종료. `npm run lint` 스크립트가 동작.
-- [ ] T004 (T003 후) `vitest.config.ts`를 작성한다 — `environment: 'jsdom'`, React 플러그인, `@/` alias를 `tsconfig` paths와 동일하게 `src/`로 매핑. 테스트는 `globals` 없이 명시적 import 사용.
+- [X] T004 (T003 후) `vitest.config.ts`를 작성한다 — `environment: 'jsdom'`, React 플러그인, `@/` alias를 `tsconfig` paths와 동일하게 `src/`로 매핑. 테스트는 `globals` 없이 명시적 import 사용.
   - 완료 기준: `npm test`가 설정 오류 없이 실행되어 "테스트 파일 없음" 외의 오류가 없음(테스트 파일이 없어 종료 코드가 1이면 허용, 설정 오류만 불가).
 
 **검토 지점 1**: 생성/변경 파일 목록을 보고한다. 커밋은 사용자가 SourceTree에서 직접 수행하며, 에이전트는 커밋을 기다리지 않고 다음 Phase로 진행해도 된다.
@@ -121,7 +123,8 @@
   - `AC-009`: 여러 라운드 진행 시 전적이 누적(합계 정확).
   - `AC-014`: 마우스 클릭 1회, `user.pointer` 탭 1회, 키보드 Enter 1회, Space 1회 각각 라운드 1회·전적 합계 +1(중복 이벤트로 2회 처리되지 않음).
   - `AC-022`: 짧은 간격(대기 없이)으로 서로 다른 입력 3회 → 합계 +3, 어떤 입력도 무시되지 않고 마지막 라운드가 status에 표시. 더블 클릭 = 2라운드.
-  - 완료 기준: AC-008, AC-009, AC-014, AC-022 통과. `GameBoard.tsx`에 `disabled`, `setTimeout`, debounce/throttle, `onPointer*`/`onTouch*`/`onKey*` 핸들러가 없음(`grep`으로 확인).
+  - **핵심 완료 기준**: 실제 연속 입력 테스트인 **AC-014**(클릭·탭·Enter·Space 각 1회 = 라운드 1회, 전적 +1)와 **AC-022**(대기 없는 서로 다른 입력 3회 = 합계 +3, 무시되는 입력 없음, 더블 클릭 = 2라운드)가 통과해야 한다. AC-008, AC-009도 통과.
+  - **보조 검증**(핵심 기준을 대체하지 않음): `GameBoard.tsx`에 `disabled`, `setTimeout`, debounce/throttle, `onPointer*`/`onTouch*`/`onKey*` 핸들러가 없음을 `grep`으로 확인.
 
 **검토 지점 5**: 여기까지가 **MVP(핵심 플레이)**. 변경 파일 보고.
 
