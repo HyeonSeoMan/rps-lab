@@ -27,7 +27,7 @@
   - 완료 기준: 예제 콘텐츠·미사용 자산이 남아 있지 않음. `npm run build`가 성공하고 출력 HTML에 viewport 메타가 포함됨.
 - [X] T003 (T001 후) 테스트 의존성을 devDependencies로 설치한다: `vitest`, `@vitejs/plugin-react`, `jsdom`, `@testing-library/react`, `@testing-library/dom`(peer), `@testing-library/user-event`. `package.json` scripts에 `"typecheck": "tsc --noEmit"`, `"test": "vitest run"`을 추가한다(`lint`는 스캐폴드 제공 스크립트 확인).
   - 완료 기준: 위 패키지 외 추가 설치 없음. `npm run typecheck`가 오류 없이 종료. `npm run lint` 스크립트가 동작.
-- [X] T004 (T003 후) `vitest.config.ts`를 작성한다 — `environment: 'jsdom'`, React 플러그인, `@/` alias를 `tsconfig` paths와 동일하게 `src/`로 매핑. 테스트는 `globals` 없이 명시적 import 사용.
+- [X] T004 (T003 후) `vitest.config.ts`를 작성한다(실제 파일명: `vitest.config.mts` — ESM 로딩 경고 회피, 보고됨) — `environment: 'jsdom'`, React 플러그인, `@/` alias를 `tsconfig` paths와 동일하게 `src/`로 매핑. 테스트는 `globals` 없이 명시적 import 사용.
   - 완료 기준: `npm test`가 설정 오류 없이 실행되어 "테스트 파일 없음" 외의 오류가 없음(테스트 파일이 없어 종료 코드가 1이면 허용, 설정 오류만 불가).
 
 **검토 지점 1**: 생성/변경 파일 목록을 보고한다. 커밋은 사용자가 SourceTree에서 직접 수행하며, 에이전트는 커밋을 기다리지 않고 다음 Phase로 진행해도 된다.
@@ -42,11 +42,11 @@
 
 ### 테스트 먼저 (Red)
 
-- [ ] T005 [P] `src/lib/rps.test.ts`를 작성한다.
+- [X] T005 [P] `src/lib/rps.test.ts`를 작성한다.
   - `AC-003`: `judge(user, computer)` 9조합 전수 표(가위>보, 바위>가위, 보>바위, 같으면 draw; 결과는 사용자 관점 `win|lose|draw`).
   - `AC-004`: `pickComputerChoice(random)` — 주입값 `0`→`rock`, `0.34`→`paper`, `0.67`→`scissors`, `0.9999999`→`scissors`, `1`→`scissors`(경계 보호 `Math.min(Math.floor(random()*3), 2)`); 시드 고정 의사난수(테스트 파일 내 LCG)로 3,000회 호출 시 세 값 모두 등장.
   - 완료 기준: 파일이 존재하고 `npm test`에서 모듈 부재로 **실패(Red)**한다. 테스트 제목이 `AC-003`, `AC-004`로 시작.
-- [ ] T006 [P] `src/lib/game-state.test.ts`를 작성한다.
+- [X] T006 [P] `src/lib/game-state.test.ts`를 작성한다.
   - `createInitialState(score)` → `{ score, lastRound: null }`.
   - `AC-006`: `play`는 `outcome`에 해당하는 항목만 정확히 +1, 나머지 불변. win/lose/draw 각각.
   - `AC-007`/`SC-003`: 0/0/0에서 N라운드 임의 시퀀스 후 `wins+losses+draws === N`.
@@ -54,7 +54,7 @@
   - `FR-008`: `reset` → 새 0/0/0 객체, `lastRound === null`.
   - 불변식: `play`/`reset`은 **항상 새 Score 객체**를 반환하고 입력 state를 변경하지 않는다(저장 effect 참조 비교의 전제).
   - 완료 기준: 파일 존재, `npm test`에서 Red. 제목에 `AC-006`, `AC-007` 포함.
-- [ ] T007 [P] `src/lib/score-storage.test.ts`를 작성한다 — 가짜 Storage 객체(`getItem`/`setItem`만)를 사용.
+- [X] T007 [P] `src/lib/score-storage.test.ts`를 작성한다 — 가짜 Storage 객체(`getItem`/`setItem`만)를 사용.
   - `parseScore`: 유효 값 채택(`{"wins":5,"losses":3,"draws":2}`), 거부 → `null`: `null` 입력, 잘못된 JSON, JSON이 객체가 아님(배열/숫자/`null`), 키 누락, 음수, 소수, 문자열 값, `Number.MAX_SAFE_INTEGER` 초과(`Number.isSafeInteger`). 추가 키는 무시.
   - `loadScore`: 저장소 `null` → `{score: 0/0/0, writable: false}`; `getItem` 예외 → `{0/0/0, false}`; 키 없음 → `{0/0/0, true}`; 손상 값 → `{0/0/0, true}`; 유효 → `{score, true}`. (`AC-005`, `AC-017`, `AC-020`)
   - `saveScore`: 키 `rps-lab:score`에 `{"wins":n,"losses":n,"draws":n}` JSON으로 저장; `setItem` 예외를 던져도 예외가 밖으로 나오지 않음. (`AC-021`)
@@ -63,13 +63,13 @@
 
 ### 구현 (Green)
 
-- [ ] T008 (T005 후) `src/lib/rps.ts`를 구현한다 — `Choice = 'rock'|'paper'|'scissors'`, `Outcome = 'win'|'lose'|'draw'`, 선택지 순서 `[rock, paper, scissors]`, `judge`, `pickComputerChoice(random: () => number)`(인덱스 `Math.min(Math.floor(random()*3), 2)`). React/Next/DOM을 import하지 않는다.
+- [X] T008 (T005 후) `src/lib/rps.ts`를 구현한다 — `Choice = 'rock'|'paper'|'scissors'`, `Outcome = 'win'|'lose'|'draw'`, 선택지 순서 `[rock, paper, scissors]`, `judge`, `pickComputerChoice(random: () => number)`(인덱스 `Math.min(Math.floor(random()*3), 2)`). React/Next/DOM을 import하지 않는다.
   - 완료 기준: `npm test src/lib/rps.test.ts` 통과(AC-003, AC-004). 파일에 `react`, `next`, `window`, `document` 문자열이 없음.
-- [ ] T009 (T006, T008 후) `src/lib/game-state.ts`를 구현한다 — 타입 `Score = {wins:number; losses:number; draws:number}`(각 값 **0 이상의 안전한 정수**), `Round = {user, computer, outcome}`, `GameState = {score, lastRound: Round | null}`, `GameAction = {type:'play'; user; computer} | {type:'reset'}`; 함수 `applyOutcome(score, outcome)`(해당 항목만 +1, 새 객체), `createInitialState(score)`, `gameReducer`(play: `judge`로 판정·`applyOutcome`·`lastRound` 갱신 / reset: **새** 0/0/0 객체와 `lastRound=null`). `hydrate` 액션과 `hydrated` 필드는 두지 않는다. 순수 모듈.
+- [X] T009 (T006, T008 후) `src/lib/game-state.ts`를 구현한다 — 타입 `Score = {wins:number; losses:number; draws:number}`(각 값 **0 이상의 안전한 정수**), `Round = {user, computer, outcome}`, `GameState = {score, lastRound: Round | null}`, `GameAction = {type:'play'; user; computer} | {type:'reset'}`; 함수 `applyOutcome(score, outcome)`(해당 항목만 +1, 새 객체), `createInitialState(score)`, `gameReducer`(play: `judge`로 판정·`applyOutcome`·`lastRound` 갱신 / reset: **새** 0/0/0 객체와 `lastRound=null`). `hydrate` 액션과 `hydrated` 필드는 두지 않는다. 순수 모듈.
   - 완료 기준: `npm test src/lib/game-state.test.ts` 통과(AC-006, AC-007). React/DOM import 없음.
-- [ ] T010 (T007, T009 후) `src/lib/score-storage.ts`를 구현한다 — 상수 `STORAGE_KEY = 'rps-lab:score'`, 타입 `StorageLike = Pick<Storage, 'getItem'|'setItem'>`, `parseScore(raw: string|null): Score|null`(세 값 모두 존재하고 `Number.isSafeInteger` 이며 0 이상일 때만 채택, 추가 키 무시), `loadScore(storage: StorageLike|null): {score: Score; writable: boolean}`(저장소 없음·`getItem` 예외 → `writable=false`; 키 없음·손상 → `writable=true`, 0/0/0), `saveScore(storage, score): void`(JSON 저장, `setItem` 예외 흡수), `getBrowserStorage(): Storage|null`(`window.localStorage` 접근 예외 흡수). DOM을 만지는 코드는 `getBrowserStorage`에만 둔다.
+- [X] T010 (T007, T009 후) `src/lib/score-storage.ts`를 구현한다 — 상수 `STORAGE_KEY = 'rps-lab:score'`, 타입 `StorageLike = Pick<Storage, 'getItem'|'setItem'>`, `parseScore(raw: string|null): Score|null`(세 값 모두 존재하고 `Number.isSafeInteger` 이며 0 이상일 때만 채택, 추가 키 무시), `loadScore(storage: StorageLike|null): {score: Score; writable: boolean}`(저장소 없음·`getItem` 예외 → `writable=false`; 키 없음·손상 → `writable=true`, 0/0/0), `saveScore(storage, score): void`(JSON 저장, `setItem` 예외 흡수), `getBrowserStorage(): Storage|null`(`window.localStorage` 접근 예외 흡수). DOM을 만지는 코드는 `getBrowserStorage`에만 둔다.
   - 완료 기준: `npm test src/lib/score-storage.test.ts` 통과(AC-005, AC-017, AC-020, AC-021 중 단위 범위). `parseScore`/`loadScore`/`saveScore`는 `window`를 직접 참조하지 않음.
-- [ ] T011 Phase 2 품질 게이트 — `npm run typecheck`, `npm run lint`, `npm test` 실행.
+- [X] T011 Phase 2 품질 게이트 — `npm run typecheck`, `npm run lint`, `npm test` 실행.
   - 완료 기준: 세 명령 모두 오류 0, `grep -rn "eslint-disable" src` 결과 없음.
 
 **검토 지점 2**: `src/lib/*` 6개 파일 변경 보고. 사용자 검토·커밋(Git 자동 작업 없음).
