@@ -162,9 +162,31 @@ specs/
 
 ## ▶️ 실행 방법
 
-현재는 설계 및 작업 분해 단계로, 실행 가능한 Next.js 애플리케이션이 아직 준비되지 않았습니다.
+```bash
+npm install
+npm run dev            # http://localhost:3000 (게임) · /history/ (기록·통계)
+npm run typecheck && npm run lint && npm test   # 품질 게이트
+```
 
-구현이 완료되면 설치 명령, 로컬 실행 방법, 테스트 명령을 이곳에 추가할 예정입니다.
+기록은 서버가 아니라 **브라우저의 IndexedDB**에만 저장됩니다(로그인·서버·외부 DB 없음).
+`next.config.ts`가 정적 내보내기(`output: "export"`)로 설정되어 있어 `npm start`(`next start`)는 쓰지 않습니다. 빌드 결과는 아래 배포 빌드로 확인합니다.
+
+## 🚀 배포 (GitHub Pages)
+
+정적 파일로 내보내 GitHub Pages에 올립니다. 설계는 [plan.md 16절](specs/002-rps-simulation-stats/plan.md), 검증 항목은 [quickstart.md 7절](specs/002-rps-simulation-stats/quickstart.md)을 따릅니다.
+
+```bash
+npm run build:pages     # PAGES_BASE_PATH=/rps-lab 로 정적 빌드 → out/
+npm run preview:pages   # out/ 을 http://localhost:4173/rps-lab/ 아래에서 서빙(Pages 동작 근사)
+```
+
+- **처음 한 번(저장소 Settings)**: Settings → Pages → Build and deployment → Source를 **GitHub Actions**로 바꿉니다.
+- **배포**: `master`에 push하면 [deploy-pages.yml](.github/workflows/deploy-pages.yml)이 typecheck·lint·test → 정적 빌드 → 배포를 실행합니다. 게이트가 실패하면 배포하지 않고 이전 사이트가 유지됩니다. PR에서는 빌드 검증만 합니다. Actions 탭에서 수동 실행도 가능합니다.
+- **주소**: 예상 주소는 `https://hyeonseoman.github.io/rps-lab/`입니다. 실제 주소는 첫 배포 후 Actions의 `deploy` 단계 또는 Settings → Pages에서 확인하세요. 주소(출처)가 바뀌면 브라우저 기록은 이전되지 않습니다.
+- **저장소 이름을 바꾸면** `package.json`의 `build:pages`와 워크플로가 쓰는 basePath(`/rps-lab`)도 함께 바꿔야 합니다.
+- **실패했을 때 확인 순서**: ① Actions 로그에서 실패한 단계(게이트·빌드·배포) ② 배포 단계 실패면 Pages Source가 GitHub Actions인지와 워크플로 권한 ③ 배포 후 스타일·화면이 깨지면 개발자 도구 Network의 404 자산과 URL이 `/rps-lab/` 하위인지.
+- **롤백**: 문제 커밋을 `git revert`하고 `master`에 push하면 이력이 보존된 채 이전 상태로 다시 배포됩니다(권장). 대안으로 마지막으로 성공한 Actions 실행에서 "Re-run all jobs"를 쓸 수 있습니다. 공식 문서가 롤백 절차를 제공하지 않으므로 처음 한 번 리허설을 권장합니다(quickstart D-11).
+- **주의**: 같은 계정의 다른 Pages 사이트와 출처(`https://<계정>.github.io`)를 공유하므로, IndexedDB 이름 `rps-lab`을 다른 사이트가 쓰지 않아야 합니다. 응답 헤더·리다이렉트는 제어할 수 없습니다.
 
 ## ✍️ 개발 기록
 

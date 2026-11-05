@@ -13,8 +13,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="ko">
       <body>
         <div className={styles.shell}>
-          <AppHeader />
-          {children}
+          <div className={styles.app}>
+            <AppHeader />
+            {children}
+          </div>
         </div>
       </body>
     </html>

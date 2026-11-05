@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:pages": "PAGES_BASE_PATH=/rps-lab next build",
+    "preview:pages": "node scripts/preview-pages.mjs out",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",

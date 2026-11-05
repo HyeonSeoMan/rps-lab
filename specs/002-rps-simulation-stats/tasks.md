@@ -35,7 +35,7 @@ description: "RPS Lab v2 구현 Tasks (자동 대결 · 기록 · 통계)"
 
 - [x] T001 `fake-indexeddb` 개발 의존성 설치(승인됨, R-10). 어댑터는 `IDBFactory`를 주입받아 테스트가 `fake-indexeddb`의 `IDBFactory`를 직접 넘기므로 전역 setup과 `vitest.config.mts` 변경은 불필요(구현 결정, jsdom 환경 유지) (`package.json`) — 검증: 기존 v1 테스트 전부 통과, 런타임 dependencies 불변
 - [x] T002 [P] (UI 구현 단계인 두 번째 배치에서 처리) 디자인 토큰 반영: `docs/references/rps-lab-v2-ui.html`의 `:root` 보정 색상(AA 보정값, win/lose/draw 카드·막대 색)을 CSS 변수로 이식 (`src/app/globals.css`) — 검증: UC 9절 색상 값과 일치, 기존 화면 깨지지 않음
-- [ ] T003 [P] (미완료 — 배포 설정 단계에서 처리, 사용자 확인 2026-11-05) 배포 빌드 설정(T-D1): `output:"export"`, `trailingSlash:true`, 배포 빌드(환경 변수 지정 시)에서만 `basePath:"/rps-lab"`, 배포 빌드·정적 미리보기용 npm 스크립트 추가 (`next.config.ts`, `package.json`) — 검증: 일반 `npm run dev/build` 동작 불변, 배포 빌드 시 `out/`에 `index.html`·`history/index.html`·`404.html`는 T038 이후 재확인(Plan 16.3)
+- [x] T003 [P] 배포 빌드 설정(T-D1): `output:"export"`, `trailingSlash:true`, 배포 빌드(환경 변수 지정 시)에서만 `basePath:"/rps-lab"`, 배포 빌드·정적 미리보기용 npm 스크립트 추가 (`next.config.ts`, `package.json`) — 검증: 일반 `npm run dev/build` 동작 불변, 배포 빌드 시 `out/`에 `index.html`·`history/index.html`·`404.html`는 T038 이후 재확인(Plan 16.3)
 
 ---
 
@@ -140,14 +140,14 @@ description: "RPS Lab v2 구현 Tasks (자동 대결 · 기록 · 통계)"
 
 ## Phase 10: 통합 검증 · 접근성 · 배포
 
-- [ ] T036 [P] 불변식 속성 테스트 `src/lib/invariants.test.ts`: 임의의 수동·자동·중지·실패·복구·초기화 연산열에서 승+패+무 == 전체 == 저장 기록 수, `seq` 단조 증가·중복 없음, 판정은 `judge()`와 일치(SC2-002, FR2-017·FR2-020) — 검증: 시드 고정 반복 통과 (T014·T033 이후)
-- [ ] T037 [P] 접근성 자동 점검 보강: 컴포넌트 테스트에서 role/라벨/`aria-current`/`aria-pressed`/live region 1개 규칙 확인, 키보드 전용 조작 경로(SC2-005, FR2-022) — 검증: 해당 테스트 통과
-- [ ] T038 정적 배포 호환 확인(T-D2): `npm run build`(배포 설정) 후 `out/`의 `index.html`·`history/index.html`·`404.html`, 자산 경로 접두사, 정적 서버에서 직접 접근·새로고침·이동·404 hydration 경고 없음, 내부 링크 `prefetch={false}`로 로드 시 `__next*.txt` 요청 없음, 개발 서버에서 `basePath` 조건부 적용 확인 (Plan 16.1, QS 7.2, D5(a)) — 검증: QS D-01~D-06 기록 (T003·T029 이후)
-- [ ] T039 성능 측정 절차 실행 및 기록(P-8: 수치는 측정 후 기록): 즉시 100/1000회 표시 시간, 기록 규모 단계별 기록 페이지 첫 표시·이동 반응, 1000회 중 응답성, 중지 반응 시간 (SC2-001·SC2-003·SC2-004·SC2-007, QS 4절) — 검증: `specs/002-rps-simulation-stats/verification.md`에 일시·환경·측정값 (T022·T024·T029 이후)
-- [ ] T040 수동 검증 M-01~M-17 수행과 기록(실제 브라우저·스크린리더 항목 포함: D4, 320~1280px 가로 스크롤 없음 SC2-005, 버튼 테두리 비텍스트 대비 D3 확인, 저장 실패는 개발자 도구로 재현 QS 5절) (QS 3절, SC2-002·SC2-005) — 검증: `verification.md`에 결과, 실패 항목은 수정 후 재검증 (T033 이후 전부)
-- [ ] T041 [P] GitHub Actions 워크플로 작성(T-D3): `.github/workflows/deploy-pages.yml` — 트리거 master push·수동, 권한 `contents:read, pages:write, id-token:write`, environment `github-pages`, `concurrency`, Node 22, 체크아웃→`npm ci`→typecheck/lint/test→배포 빌드→`upload-pages-artifact(out/)`→`deploy-pages`, PR은 빌드만 (Plan 16.2) — 검증: YAML 문법·action 버전 확인(실제 배포 push는 사용자가 SourceTree에서 수행) (T038 이후)
-- [ ] T042 배포 환경 검증 및 문서화(T-D4·T-D5): 배포 후 실제 주소·경로 확인(미확정 값은 배포 후 기록), QS 7절 D-01~D-12 수행, `README.md`에 배포 절(주소 확인, 실패 확인 순서, 롤백, 주의사항) 추가 (QS 7절, Plan 16.3) — 검증: `verification.md`에 배포 검증 기록. 실제 배포 단계는 사용자 push 이후 수행
-- [ ] T043 최종 추적성 점검: FR2-001~025·AC2-xxx·SC2-001~007 ↔ 테스트/검증 기록 대조표를 `verification.md`에 작성하고 누락 시 보강(필요 시 서브에이전트 읽기 전용 교차 검증 최대 1회, Plan 에이전트 정책) — 검증: 누락 0건 (T036~T040 이후)
+- [x] T036 [P] 불변식 속성 테스트 `src/lib/invariants.test.ts`: 임의의 수동·자동·중지·실패·복구·초기화 연산열에서 승+패+무 == 전체 == 저장 기록 수, `seq` 단조 증가·중복 없음, 판정은 `judge()`와 일치(SC2-002, FR2-017·FR2-020) — 검증: 시드 고정 반복 통과 (T014·T033 이후)
+- [x] T037 [P] 접근성 자동 점검 보강: 컴포넌트 테스트에서 role/라벨/`aria-current`/`aria-pressed`/live region 1개 규칙 확인, 키보드 전용 조작 경로(SC2-005, FR2-022) — 검증: 해당 테스트 통과
+- [x] T038 정적 배포 호환 확인(T-D2): `npm run build`(배포 설정) 후 `out/`의 `index.html`·`history/index.html`·`404.html`, 자산 경로 접두사, 정적 서버에서 직접 접근·새로고침·이동·404 hydration 경고 없음, 내부 링크 `prefetch={false}`로 로드 시 `__next*.txt` 요청 없음, 개발 서버에서 `basePath` 조건부 적용 확인 (Plan 16.1, QS 7.2, D5(a)) — 검증: QS D-01~D-06 기록 (T003·T029 이후)
+- [x] T039 성능 측정 절차 실행 및 기록(P-8: 수치는 측정 후 기록): 즉시 100/1000회 표시 시간, 기록 규모 단계별 기록 페이지 첫 표시·이동 반응, 1000회 중 응답성, 중지 반응 시간 (SC2-001·SC2-003·SC2-004·SC2-007, QS 4절) — 검증: `specs/002-rps-simulation-stats/verification.md`에 일시·환경·측정값 (T022·T024·T029 이후)
+- [ ] T040 (부분 수행: Chrome 자동 검증은 verification.md에 기록, 스크린리더·Safari·Firefox·실기기·bfcache는 미검증이라 미완료) 수동 검증 M-01~M-17 수행과 기록(실제 브라우저·스크린리더 항목 포함: D4, 320~1280px 가로 스크롤 없음 SC2-005, 버튼 테두리 비텍스트 대비 D3 확인, 저장 실패는 개발자 도구로 재현 QS 5절) (QS 3절, SC2-002·SC2-005) — 검증: `verification.md`에 결과, 실패 항목은 수정 후 재검증 (T033 이후 전부)
+- [x] T041 [P] GitHub Actions 워크플로 작성(T-D3): `.github/workflows/deploy-pages.yml` — 트리거 master push·수동, 권한 `contents:read, pages:write, id-token:write`, environment `github-pages`, `concurrency`, Node 22, 체크아웃→`npm ci`→typecheck/lint/test→배포 빌드→`upload-pages-artifact(out/)`→`deploy-pages`, PR은 빌드만 (Plan 16.2) — 검증: YAML 문법·action 버전 확인(실제 배포 push는 사용자가 SourceTree에서 수행) (T038 이후)
+- [ ] T042 (README 배포 절과 로컬 사전 확인은 완료, 실제 배포 후 D-02~D-12와 롤백 리허설이 필요해 미완료) 배포 환경 검증 및 문서화(T-D4·T-D5): 배포 후 실제 주소·경로 확인(미확정 값은 배포 후 기록), QS 7절 D-01~D-12 수행, `README.md`에 배포 절(주소 확인, 실패 확인 순서, 롤백, 주의사항) 추가 (QS 7절, Plan 16.3) — 검증: `verification.md`에 배포 검증 기록. 실제 배포 단계는 사용자 push 이후 수행
+- [x] T043 최종 추적성 점검: FR2-001~025·AC2-xxx·SC2-001~007 ↔ 테스트/검증 기록 대조표를 `verification.md`에 작성하고 누락 시 보강(필요 시 서브에이전트 읽기 전용 교차 검증 최대 1회, Plan 에이전트 정책) — 검증: 누락 0건 (T036~T040 이후)
 
 ---
 

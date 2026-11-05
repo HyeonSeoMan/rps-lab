@@ -49,13 +49,22 @@ export function useHistory(store: QueuedBattleStore) {
       try {
         if (waitIdle) await store.whenIdle();
         const before = anchors.length ? anchors[anchors.length - 1] : undefined;
-        const [stats, page] = await Promise.all([store.loadStats(), store.listBattles({ before, limit: PAGE_SIZE })]);
+        const [statsResult, pageResult] = await Promise.allSettled([
+          store.loadStats(),
+          store.listBattles({ before, limit: PAGE_SIZE }),
+        ]);
         if (no !== requestNo.current) return; // 더 최신 요청이 있음
-        dispatch({ type: "LOADED", stats, rows: page.items, pageIndex, anchors, hasNext: page.hasMore });
+        // 저장소 계약 3.2절: 게이트는 통계(loadStats) 읽기 실패에서만 닫는다. 목록 조회 실패는
+        // 기록 오류 상태로만 보이고 저장(쓰기)을 막지 않는다(불필요한 차단 방지).
+        if (statsResult.status === "rejected") store.closeGate("read");
+        if (statsResult.status === "rejected" || pageResult.status === "rejected") {
+          dispatch({ type: "FAILED" });
+          return;
+        }
+        dispatch({ type: "LOADED", stats: statsResult.value, rows: pageResult.value.items, pageIndex, anchors, hasNext: pageResult.value.hasMore });
       } catch {
         if (no !== requestNo.current) return;
-        store.closeGate("read"); // 읽기 실패: 게임 페이지에서도 저장 불가(읽기) 상태로 시작한다
-        dispatch({ type: "FAILED" });
+        dispatch({ type: "FAILED" }); // whenIdle 등 예기치 않은 실패(게이트는 건드리지 않는다)
       }
     },
     [store, bump],

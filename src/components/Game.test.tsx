@@ -880,6 +880,27 @@ describe("US5: 전적 초기화 (확인 후에만, 원자적)", () => {
     expect(screen.queryByRole("alert")).toBeNull();
   });
 
+  it("초기화 실패 뒤에도 정상 게임이 가능하다: 대결은 저장되고 게이트는 닫히지 않으며 저장 안내가 없다", async () => {
+    const user = userEvent.setup({ delay: null });
+    const env = seeded();
+    await renderGame(env, { random: () => 0.4 });
+    env.mem.fail.clear = 1;
+    await user.click(button("전적 초기화"));
+    await user.click(within(dialog()).getByRole("button", { name: "전체 삭제" }));
+    await screen.findByText("초기화하지 못했어요");
+    expect(env.store.gate()).toEqual({ closed: false });
+    await user.click(button("가위"));
+    await waitFor(() => expect(env.mem.records()).toHaveLength(4));
+    await expectLine("승 2 패 1 무 1");
+    expect(screen.queryByText("기록을 저장하지 못했어요")).toBeNull();
+    // 자동 대결도 가능
+    await toAuto(user);
+    await user.click(button("10회"));
+    await user.click(button("자동 대결 시작"));
+    await screen.findByText("자동 대결 10회를 마쳤어요.");
+    expect(env.mem.records()).toHaveLength(14);
+  });
+
   it("자동 대결 실행 중에는 초기화할 수 없고 안내가 보인다(P-4)", async () => {
     const user = userEvent.setup({ delay: null });
     const clock = manualClock();

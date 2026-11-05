@@ -180,6 +180,22 @@ describe("기록·통계 페이지", () => {
     expect(screen.queryByRole("alert")).toBeNull();
   });
 
+  it("목록 조회만 실패하면(통계 읽기는 성공) 오류를 보이되 저장 게이트는 닫지 않아 게임 저장을 막지 않는다(계약 3.2)", async () => {
+    const e = env(5);
+    const original = e.mem.listBattles;
+    let fail = true;
+    e.mem.listBattles = async (q) => {
+      if (fail) throw new Error("list failed");
+      return original(q);
+    };
+    render(<History store={e.store} />);
+    await screen.findByRole("alert");
+    expect(e.store.gate()).toEqual({ closed: false });
+    await e.store.recordBattles([{ user: "rock", computer: "rock", at: 1 }]); // 저장이 막히지 않음
+    expect(e.mem.records()).toHaveLength(6);
+    fail = false;
+  });
+
   it("조회 오류 후 재시도도 실패하면 오류가 유지된다", async () => {
     const user = userEvent.setup();
     const e = env(5);

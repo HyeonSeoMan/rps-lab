@@ -14,6 +14,9 @@ describe("stats", () => {
     expect(formatPercent(winRate({ wins: 2, losses: 1, draws: 0 }))).toBe("66.7%");
     expect(formatPercent(winRate({ wins: 3, losses: 0, draws: 0 }))).toBe("100.0%");
   });
+  it("AC2-023: 승 3 / 패 1 / 무 1이면 승률은 3 ÷ 5 × 100 = 60.0%(무승부는 분모에 포함)", () => {
+    expect(formatPercent(winRate({ wins: 3, losses: 1, draws: 1 }))).toBe("60.0%");
+  });
   it("비율은 반올림하지 않은 실제 비율", () => {
     const r = ratios({ wins: 1, losses: 1, draws: 1 });
     expect(r.wins).toBeCloseTo(1 / 3, 10);

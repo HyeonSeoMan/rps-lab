@@ -1,0 +1,64 @@
+# GitHub Pages 배포 (정적 내보내기). 설계: specs/002-rps-simulation-stats/plan.md 16절
+# - master push(와 수동 실행)에서만 배포하고, 게이트(typecheck·lint·test)와 빌드가 통과해야 배포한다.
+# - PR에서는 게이트와 빌드만 검증하고 배포하지 않는다.
+# 저장소 설정(1회 수동): Settings → Pages → Build and deployment → Source = "GitHub Actions"
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 동시 배포는 직렬화하고 진행 중인 배포는 취소하지 않는다.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # 게이트: 실패하면 이후 단계(배포 포함)가 실행되지 않는다.
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+
+      # 정적 내보내기. basePath(/rps-lab)는 이 빌드에서만 적용된다. 저장소 이름이 바뀌면 이 값도 바꾼다.
+      - name: Build (static export)
+        run: npm run build:pages
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+
+  deploy:
+    # PR에서는 배포하지 않는다(master push 또는 수동 실행에서만).
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
