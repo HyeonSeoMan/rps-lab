@@ -34,8 +34,8 @@ description: "RPS Lab v2 구현 Tasks (자동 대결 · 기록 · 통계)"
 ## Phase 1: Setup
 
 - [x] T001 `fake-indexeddb` 개발 의존성 설치(승인됨, R-10). 어댑터는 `IDBFactory`를 주입받아 테스트가 `fake-indexeddb`의 `IDBFactory`를 직접 넘기므로 전역 setup과 `vitest.config.mts` 변경은 불필요(구현 결정, jsdom 환경 유지) (`package.json`) — 검증: 기존 v1 테스트 전부 통과, 런타임 dependencies 불변
-- [x] T002 [P] 디자인 토큰 반영: `docs/references/rps-lab-v2-ui.html`의 `:root` 보정 색상(AA 보정값, win/lose/draw 카드·막대 색)을 CSS 변수로 이식 (`src/app/globals.css`) — 검증: UC 9절 색상 값과 일치, 기존 화면 깨지지 않음
-- [x] T003 [P] 배포 빌드 설정(T-D1): `output:"export"`, `trailingSlash:true`, 배포 빌드(환경 변수 지정 시)에서만 `basePath:"/rps-lab"`, 배포 빌드·정적 미리보기용 npm 스크립트 추가 (`next.config.ts`, `package.json`) — 검증: 일반 `npm run dev/build` 동작 불변, 배포 빌드 시 `out/`에 `index.html`·`history/index.html`·`404.html`는 T038 이후 재확인(Plan 16.3)
+- [x] T002 [P] (UI 구현 단계인 두 번째 배치에서 처리) 디자인 토큰 반영: `docs/references/rps-lab-v2-ui.html`의 `:root` 보정 색상(AA 보정값, win/lose/draw 카드·막대 색)을 CSS 변수로 이식 (`src/app/globals.css`) — 검증: UC 9절 색상 값과 일치, 기존 화면 깨지지 않음
+- [ ] T003 [P] (미완료 — 배포 설정 단계에서 처리, 사용자 확인 2026-11-05) 배포 빌드 설정(T-D1): `output:"export"`, `trailingSlash:true`, 배포 빌드(환경 변수 지정 시)에서만 `basePath:"/rps-lab"`, 배포 빌드·정적 미리보기용 npm 스크립트 추가 (`next.config.ts`, `package.json`) — 검증: 일반 `npm run dev/build` 동작 불변, 배포 빌드 시 `out/`에 `index.html`·`history/index.html`·`404.html`는 T038 이후 재확인(Plan 16.3)
 
 ---
 
@@ -65,10 +65,10 @@ description: "RPS Lab v2 구현 Tasks (자동 대결 · 기록 · 통계)"
 **Goal**: v1 수동 대결을 유지하면서 확정된 대결마다 기록 1건을 IndexedDB에 저장하고, 새로고침 후에도 전적이 유지된다.
 **Independent Test**: QS M-01(수동 몇 번 → 합계 = 기록 수 → 새로고침 유지). AC2-001~004, AC2-055, SC2-006.
 
-- [ ] T016 [US1] 세션 훅 `src/components/useGameSession.ts`: 리듀서·`getBrowserBattleStore()`(또는 prop 주입)·초기 `loadStats`, 수동 대결 확정 → 큐 저장 → 성공 후 전적 반영, 실행 중·읽기 실패 시 입력 규칙 (FR2-002·FR2-010·FR2-012·FR2-017, FR2-020) — 검증: 메모리 저장소 주입 훅 테스트, 서버 컴포넌트는 함수를 prop으로 넘기지 않음 (T012·T013 이후)
-- [ ] T017 [P] [US1] 게임 하위 컴포넌트 `src/components/game/`: `ModeToggle`(`aria-pressed`·키보드, FR2-001, AC2-002), `ManualPanel`(선택 버튼 3개, FR2-003), `BattleArena`(`role="status"` 단일 대표 live region, 결과 문장 1개, D1), `ScoreCards`(승/패/무 색상 카드, D2, FR2-010) + 각 `*.module.css` — 검증: UC 요소·role·문구 일치, 레퍼런스 HTML과 시각 비교(QS M-01/M-12), 외부 색만으로 구분하지 않고 텍스트 라벨 유지
-- [ ] T018 [US1] `src/components/Game.tsx`·`GameBoard.tsx`를 세션 훅 + 하위 컴포넌트 조합으로 재구성(v1의 복원 게이트 제거, v1 레이아웃 위치 유지) (FR2-021, AC2-001·AC2-003·AC2-004) — 검증: T019 통과 (T016·T017 이후)
-- [ ] T019 [US1] `src/components/Game.test.tsx`에 v1 수동 대결 테스트 이관·확장: 메모리 저장소 주입, v1 AC 회귀 0건(SC2-006), 빠른 연속 입력 N회 유실·중복 없음(AC2-055), 대결 1회당 기록 +1·해당 결과 +1(AC2-004), 새로고침 후 유지(저장소 재생성) — 검증: 전부 통과, 이관 전 v1 테스트 동일 어서션 보존 (T018 이후)
+- [x] T016 [US1] 세션 훅 `src/components/useGameSession.ts`: 리듀서·`getBrowserBattleStore()`(또는 prop 주입)·초기 `loadStats`, 수동 대결 확정 → 큐 저장 → 성공 후 전적 반영, 실행 중·읽기 실패 시 입력 규칙 (FR2-002·FR2-010·FR2-012·FR2-017, FR2-020) — 검증: 메모리 저장소 주입 훅 테스트, 서버 컴포넌트는 함수를 prop으로 넘기지 않음 (T012·T013 이후)
+- [x] T017 [P] [US1] 게임 하위 컴포넌트 `src/components/game/`: `ModeToggle`(`aria-pressed`·키보드, FR2-001, AC2-002), `ManualPanel`(선택 버튼 3개, FR2-003), `BattleArena`(`role="status"` 단일 대표 live region, 결과 문장 1개, D1), `ScoreCards`(승/패/무 색상 카드, D2, FR2-010) + 각 `*.module.css` — 검증: UC 요소·role·문구 일치, 레퍼런스 HTML과 시각 비교(QS M-01/M-12), 외부 색만으로 구분하지 않고 텍스트 라벨 유지
+- [x] T018 [US1] `src/components/Game.tsx`·`GameBoard.tsx`를 세션 훅 + 하위 컴포넌트 조합으로 재구성(v1의 복원 게이트 제거, v1 레이아웃 위치 유지) (FR2-021, AC2-001·AC2-003·AC2-004) — 검증: T019 통과 (T016·T017 이후)
+- [x] T019 [US1] `src/components/Game.test.tsx`에 v1 수동 대결 테스트 이관·확장: 메모리 저장소 주입, v1 AC 회귀 0건(SC2-006), 빠른 연속 입력 N회 유실·중복 없음(AC2-055), 대결 1회당 기록 +1·해당 결과 +1(AC2-004), 새로고침 후 유지(저장소 재생성) — 검증: 전부 통과, 이관 전 v1 테스트 동일 어서션 보존 (T018 이후)
 
 **Checkpoint**: 수동 대결 + 영속 저장 MVP 동작.
 
@@ -79,9 +79,9 @@ description: "RPS Lab v2 구현 Tasks (자동 대결 · 기록 · 통계)"
 **Goal**: 자동 모드에서 10/100/1000회를 즉시 실행하고 결과·전적·기록이 정확히 반영된다.
 **Independent Test**: QS M-02. AC2-005~AC2-013, AC2-062, SC2-001·SC2-007.
 
-- [ ] T020 [P] [US2] `AutoPanel`(내 손 방식·실행 방식·횟수 설정, 시작 버튼, 자동 모드에서 수동 버튼 숨김·수동 모드에서 자동 UI 숨김 P-3, 실행 중 설정 잠금 FR2-009)과 `RunSummary`(완료 요약, 승/패/무 횟수) 구현 (`src/components/game/AutoPanel.tsx`, `RunSummary.tsx`, css) (FR2-003·FR2-004·FR2-006) — 검증: UC 문구·role 일치, 키보드 조작 가능
-- [ ] T021 [US2] 세션 훅에 자동 실행 연결(`useGameSession.ts`): `auto-runner` 호출, 즉시 실행의 "처리하고 저장하고 있어요" 상태 표시·중복 실행 방지(P-6), 완료 시 요약 낭독 1회(P-7), 낭독 문장 6개 중 시작·완료 사용 (FR2-006·FR2-009·FR2-010·FR2-017) — 검증: 컴포넌트 테스트에서 100·1000회 후 기록 수·전적 합계 일치, 시작·완료 외 대결별 낭독 없음 (T014·T020 이후)
-- [ ] T022 [US2] 자동 모드 통합 테스트 `src/components/Game.test.tsx` 추가: 즉시 실행 10/100/1000 결과 합계, 실행 중 모드 전환·설정 변경·수동 대결·초기화 불가(FR2-009), 수동+자동 합산(FR2-010) — 검증: 통과 (T021 이후)
+- [x] T020 [P] [US2] `AutoPanel`(내 손 방식·실행 방식·횟수 설정, 시작 버튼, 자동 모드에서 수동 버튼 숨김·수동 모드에서 자동 UI 숨김 P-3, 실행 중 설정 잠금 FR2-009)과 `RunSummary`(완료 요약, 승/패/무 횟수) 구현 (`src/components/game/AutoPanel.tsx`, `RunSummary.tsx`, css) (FR2-003·FR2-004·FR2-006) — 검증: UC 문구·role 일치, 키보드 조작 가능
+- [x] T021 [US2] 세션 훅에 자동 실행 연결(`useGameSession.ts`): `auto-runner` 호출, 즉시 실행의 "처리하고 저장하고 있어요" 상태 표시·중복 실행 방지(P-6), 완료 시 요약 낭독 1회(P-7), 낭독 문장 6개 중 시작·완료 사용 (FR2-006·FR2-009·FR2-010·FR2-017) — 검증: 컴포넌트 테스트에서 100·1000회 후 기록 수·전적 합계 일치, 시작·완료 외 대결별 낭독 없음 (T014·T020 이후)
+- [x] T022 [US2] 자동 모드 통합 테스트 `src/components/Game.test.tsx` 추가: 즉시 실행 10/100/1000 결과 합계, 실행 중 모드 전환·설정 변경·수동 대결·초기화 불가(FR2-009), 수동+자동 합산(FR2-010) — 검증: 통과 (T021 이후)
 
 ---
 
@@ -90,8 +90,8 @@ description: "RPS Lab v2 구현 Tasks (자동 대결 · 기록 · 통계)"
 **Goal**: 애니메이션 실행 중 진행 표시와 중지가 동작하고 확정된 대결만 반영된다.
 **Independent Test**: QS M-03. AC2-014~AC2-019, SC2-004.
 
-- [ ] T023 [P] [US3] `RunProgress`(진행 횟수 / 전체, 진행 표시줄, 중지 버튼) 구현, 시스템 "동작 줄이기" 시 애니메이션 처리(P-13) (`src/components/game/RunProgress.tsx`, css) (FR2-007·FR2-008, P-13) — 검증: `matchMedia` 모의로 동작 줄이기 분기 테스트(jsdom에 없으므로 가드)
-- [ ] T024 [US3] 세션 훅·`AutoPanel`에 애니메이션 실행(70ms 틱·묶음)과 중지 연결, 중지 요약 문구(`{N}회 중 {k}회가 저장됐어요…`), 언마운트·`pagehide` 시 같은 `AbortController`로 중단(G-8·G-9) (FR2-007·FR2-008) — 검증: 컴포넌트 테스트에서 중지 후 새 대결 시작 안 됨·기록 수 정지(SC2-004), 중지 후 상태에서 전적 == 기록 수 (T014·T023 이후)
+- [x] T023 [P] [US3] `RunProgress`(진행 횟수 / 전체, 진행 표시줄, 중지 버튼) 구현, "동작 줄이기"(P-13)는 승인된 Plan 11절대로 CSS(전환·스피너 끄기)로 처리하며 JS 분기는 없음 (`src/components/game/RunProgress.tsx`, css) (FR2-007·FR2-008, P-13) — 검증: 진행 표시줄 aria 값·중지 동작은 Game.test.tsx에서 검증, 동작 줄이기는 CSS 미디어 쿼리라 T040 수동 확인
+- [x] T024 [US3] 세션 훅·`AutoPanel`에 애니메이션 실행(70ms 틱·묶음)과 중지 연결, 중지 요약 문구(`{N}회 중 {k}회가 저장됐어요…`), 언마운트·`pagehide` 시 같은 `AbortController`로 중단(G-8·G-9) (FR2-007·FR2-008) — 검증: 컴포넌트 테스트에서 중지 후 새 대결 시작 안 됨·기록 수 정지(SC2-004), 중지 후 상태에서 전적 == 기록 수 (T014·T023 이후)
 
 ---
 

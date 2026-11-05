@@ -1,6 +1,45 @@
 :root {
-  --background: #f5f7fb;
-  --foreground: #17212f;
+  /* 디자인 토큰: docs/references/rps-lab-v2-ui.html :root 값(AA 보정 포함, 원래 Figma 값은 그 파일 주석에 있음) */
+  --background: #f3f6fc;
+  --foreground: #24334c;
+  --card: #fff;
+  --seg: #f0f4fa;
+  --panel: #f8faff;
+  --summary: #f5f8fd;
+  --muted: #637083;
+  --accent: #3870ca;
+  --brand-sub: #55729c;
+  --me: #eaf4ff;
+  --cpu: #fff1e9;
+  --vs: #8996a8;
+  --win-bg: #e9f7f1;
+  --win-fg: #147d56;
+  --lose-bg: #fff0f0;
+  --lose-fg: #bc4851;
+  --draw-bg: #eff2f8;
+  --draw-fg: #626f88;
+  --rec-win: #128257;
+  --out-lose: #c24954;
+  --out-draw: #637083;
+  --bar-bg: #e9edf4;
+  --line: #e1e8f3;
+  --pill-line: #dbe4f1;
+  --g-w: #3bb989;
+  --g-l: #ed7b83;
+  --g-d: #a5afc2;
+  --focus: #4e80df;
+  --stop-line: #e4a4a8;
+  --stop-fg: #c84450;
+  --warn-bg: #fff7e6;
+  --warn-line: #e9b949;
+  --warn-fg: #7a4a00;
+  --err-bg: #fff0f0;
+  --err-line: #e8a3a8;
+  --err-fg: #9b2c35;
+  --ok-bg: #e9f7f1;
+  --ok-line: #8fd0b3;
+  --ok-fg: #0f6244;
+  --danger: #bc4851;
 }
 
 * {
@@ -17,3 +56,8 @@ body {
     system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
   -webkit-font-smoothing: antialiased;
 }
+
+/* 버튼 공통(CSS 모듈은 순수 선택자만 허용하므로 전역에 둔다) */
+button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+button:disabled { cursor: not-allowed; opacity: 0.45; }
+button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }

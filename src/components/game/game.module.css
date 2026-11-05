@@ -1,0 +1,98 @@
+/* 게임 페이지 스타일. 기준: docs/references/rps-lab-v2-ui.html (토큰은 app/globals.css). 컨테이너 폭 600px 이하에서 모바일 배치(U4). */
+.game { width: min(100% - 28px, 820px); margin: 0 auto; padding: clamp(20px, 5vw, 48px) 0 56px; }
+.frame { container-type: inline-size; container-name: app; }
+.title { margin: 0 0 20px; font-size: 29px; line-height: 1.1; font-weight: 800; letter-spacing: -0.04em; overflow-wrap: anywhere; }
+.skeleton { min-height: 27rem; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 26px 20px 24px; box-shadow: 0 9px 30px #284b8008; }
+.srOnly { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+
+/* 모드 토글 */
+.seg { display: grid; grid-template-columns: 1fr 1fr; background: var(--seg); border-radius: 14px; padding: 5px; margin-bottom: 20px; }
+.seg button { border: 0; background: transparent; border-radius: 11px; min-height: 45px; font-size: 14px; font-weight: 700; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: #fff; color: var(--accent); box-shadow: 0 2px 8px #2d5e9918; }
+.seg button:disabled[aria-pressed="true"] { opacity: 0.75; }
+.seg button:focus-visible { outline-offset: -3px; }
+
+/* 결과 영역 */
+.battle { position: relative; }
+.arena { display: grid; grid-template-columns: minmax(0, 1fr) 118px minmax(0, 1fr); align-items: stretch; margin: 0 0 14px; }
+.fighter { min-width: 0; border-radius: 17px; min-height: 176px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 10px 8px; text-align: center; }
+.me { background: var(--me); }
+.cpu { background: var(--cpu); }
+.name { font-size: 14px; font-weight: 700; color: var(--muted); }
+.hand { font-size: 60px; line-height: 1.1; }
+.pickName { min-height: 22px; font-size: 15px; font-weight: 700; }
+.outcome { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; min-width: 0; }
+.vs { font-size: 22px; font-weight: 800; color: var(--vs); }
+.result { font-size: 20px; font-weight: 800; min-height: 28px; white-space: nowrap; }
+.outcome[data-outcome="win"] .result { color: var(--rec-win); }
+.outcome[data-outcome="lose"] .result { color: var(--out-lose); }
+.outcome[data-outcome="draw"] .result { color: var(--out-draw); }
+.unsaved { display: flex; justify-content: center; margin: 0 0 12px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--warn-line); background: var(--warn-bg); color: var(--warn-fg); border-radius: 999px; padding: 5px 12px; font-size: 13px; font-weight: 800; }
+.chip::before { content: "⚠"; font-size: 12px; }
+.hint { margin: 0 0 16px; text-align: center; font-size: 14px; color: var(--muted); min-height: 21px; overflow-wrap: anywhere; }
+
+/* 직접 대결 선택 버튼 */
+.choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.choice { border: 1px solid #d9e3f0; background: #fff; border-radius: 16px; min-height: 98px; min-width: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-size: 14px; font-weight: 700; }
+.choice .emoji { font-size: 34px; line-height: 1; }
+.choice:hover:not(:disabled) { background: #f3f8ff; border-color: #85afe9; }
+
+/* 자동 대결 패널 */
+.panel { background: var(--panel); border-radius: 17px; padding: 16px 17px 17px; }
+.fld { margin-bottom: 16px; }
+.fld h3 { margin: 0 0 9px; font-size: 14px; font-weight: 800; }
+.pills { display: grid; gap: 16px; }
+.pills + .pills { margin-top: 12px; }
+.c2 { grid-template-columns: 1fr 1fr; }
+.c3 { grid-template-columns: repeat(3, 1fr); }
+.pill { border: 1px solid var(--pill-line); background: #fff; border-radius: 11px; min-height: 48px; font-size: 14px; font-weight: 700; color: var(--foreground); }
+.pill[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.pill:disabled[aria-pressed="true"] { opacity: 0.7; }
+.primary { width: 100%; min-height: 54px; border: 0; border-radius: 12px; background: var(--accent); color: #fff; font-size: 15px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px; }
+.progress { margin-top: 14px; }
+.prow { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 14px; }
+.prow strong { font-size: 16px; }
+.stop { min-height: 44px; border: 1px solid var(--stop-line); background: #fff; color: var(--stop-fg); border-radius: 10px; padding: 0 20px; font-weight: 700; }
+.bar { height: 9px; background: #dce5f3; border-radius: 99px; overflow: hidden; margin: 9px 0; }
+.bar i { display: block; height: 100%; background: var(--accent); border-radius: 99px; transition: width 0.25s; }
+.note { margin: 8px 0 0; font-size: 13px; color: var(--muted); }
+.runnote { margin: 12px 0 0; padding: 11px 14px; border-radius: 12px; background: #eaf2ff; color: #1f4f9f; font-size: 13.5px; font-weight: 700; display: flex; gap: 10px; align-items: center; }
+.spin { width: 16px; height: 16px; border-radius: 50%; border: 2.5px solid currentColor; border-right-color: transparent; animation: spin 0.9s linear infinite; flex: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.summary { margin: 14px 0 0; padding: 13px 15px; border-radius: 12px; background: var(--summary); border: 1px solid var(--line); font-size: 14px; line-height: 1.6; }
+.summary.bad { background: var(--err-bg); border-color: var(--err-line); color: var(--err-fg); }
+
+/* 누적 전적 카드(승·패·무 색상 카드, D2 A안) */
+.stats { list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin-top: 20px; }
+.stat { min-width: 0; border-radius: 15px; padding: 14px 16px; min-height: 86px; overflow-wrap: anywhere; }
+.stat small { display: block; font-size: 13px; font-weight: 700; margin-bottom: 2px; }
+.stat strong { font-size: 28px; line-height: 1.25; font-variant-numeric: tabular-nums; }
+.w { background: var(--win-bg); color: var(--win-fg); }
+.l { background: var(--lose-bg); color: var(--lose-fg); }
+.d { background: var(--draw-bg); color: var(--draw-fg); }
+
+@container app (max-width: 600px) {
+  .arena { grid-template-columns: minmax(0, 1fr) 56px minmax(0, 1fr); }
+  .fighter { min-height: 140px; }
+  .hand { font-size: 44px; }
+  .vs { font-size: 20px; }
+  .result { font-size: 14px; }
+  .choice { min-height: 82px; border-radius: 15px; background: var(--seg); }
+  .choice .emoji { font-size: 30px; }
+  .pills { gap: 12px; }
+  .stats { gap: 8px; }
+  .stat { padding: 13px 10px 10px; }
+}
+@container app (max-width: 360px) {
+  .stat strong { font-size: 24px; }
+  .panel { padding: 14px 10px; }
+  .pills { gap: 8px; }
+  .pill { font-size: 13px; padding: 0 2px; white-space: nowrap; }
+  .pickName { font-size: 13px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spin { animation: none; }
+  .bar i { transition: none; }
+}
