@@ -163,7 +163,7 @@ src/
     ├── score-storage.ts       # parseScore, loadScore({score,writable}), saveScore, getBrowserStorage
     └── score-storage.test.ts
 src/components/Game.test.tsx   # UI 테스트 (AC 흐름)
-vitest.config.ts               # jsdom, react 플러그인, alias
+vitest.config.mts              # jsdom, react 플러그인, alias
 ```
 
 **Structure Decision**: 단일 Next.js 프로젝트(`src/` 레이아웃)로 하며 백엔드·모노레포·별도 패키지를

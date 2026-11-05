@@ -136,3 +136,61 @@ describe("복원 게이트 (서버 렌더·하이드레이션)", () => {
     container.remove();
   });
 });
+
+describe("US2: 누적 전적 표시", () => {
+  // 전적 항목: 라벨과 값이 함께 읽히는 "승 N" / "패 N" / "무 N"
+  const scoreText = (label: "승" | "패" | "무") =>
+    screen.getByText(new RegExp(`^${label} \\d+$`)).textContent;
+  const scoreLine = () => `${scoreText("승")} ${scoreText("패")} ${scoreText("무")}`;
+
+  it("AC-005: 저장된 전적이 없는 첫 접속에서 승 0 / 패 0 / 무 0이 표시된다", () => {
+    renderGame();
+    expect(scoreText("승")).toBe("승 0");
+    expect(scoreText("패")).toBe("패 0");
+    expect(scoreText("무")).toBe("무 0");
+  });
+
+  // 가위로 플레이: 난수 0 → 컴퓨터 바위(패배), 0.4 → 보(승리), 0.9 → 가위(무승부)
+  it.each([
+    [0, "승 0 패 1 무 0"],
+    [0.4, "승 1 패 0 무 0"],
+    [0.9, "승 0 패 0 무 1"],
+  ])(
+    "AC-006: 난수 %s 라운드는 해당 항목만 정확히 1 증가한다 → %s",
+    async (value, expected) => {
+      const user = userEvent.setup();
+      renderGame(() => value);
+      await user.click(button("가위"));
+      expect(scoreLine()).toBe(expected);
+    },
+  );
+
+  it("AC-006: 이미 누적된 값에서도 해당 항목만 1 증가하고 나머지는 변하지 않는다", async () => {
+    const values = [0.4, 0.4, 0, 0.9]; // 승 승 패 무
+    let i = 0;
+    const user = userEvent.setup();
+    renderGame(() => values[i++]);
+    await user.click(button("가위"));
+    await user.click(button("가위"));
+    expect(scoreLine()).toBe("승 2 패 0 무 0");
+    await user.click(button("가위"));
+    expect(scoreLine()).toBe("승 2 패 1 무 0");
+    await user.click(button("가위"));
+    expect(scoreLine()).toBe("승 2 패 1 무 1");
+  });
+
+  it("AC-007: 0/0/0에서 N라운드 진행 후 승 + 패 + 무 = N 이다", async () => {
+    const values = [0, 0.4, 0.9, 0.4, 0, 0.9, 0.4]; // 7라운드, 결과 혼합
+    let i = 0;
+    const user = userEvent.setup();
+    renderGame(() => values[i++ % values.length]);
+    const choices = ["가위", "바위", "보"];
+    for (let n = 0; n < values.length; n++) {
+      await user.click(button(choices[n % 3]));
+    }
+    const total = ["승", "패", "무"]
+      .map((l) => Number(scoreText(l as "승" | "패" | "무")?.split(" ")[1]))
+      .reduce((a, b) => a + b, 0);
+    expect(total).toBe(values.length);
+  });
+});

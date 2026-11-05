@@ -51,6 +51,11 @@ export default function GameBoard({ random = Math.random }: Props) {
           </button>
         ))}
       </div>
+      <ul aria-label="누적 전적">
+        <li>승 {state.score.wins}</li>
+        <li>패 {state.score.losses}</li>
+        <li>무 {state.score.draws}</li>
+      </ul>
     </>
   );
 }
