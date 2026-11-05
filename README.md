@@ -107,6 +107,10 @@ flowchart LR
 └── memory/
     └── constitution.md
 
+docs/
+└── references/
+    └── rps-ui-reference.html
+
 specs/
 └── 001-rps-game/
     ├── spec.md
@@ -128,6 +132,7 @@ specs/
 - [기술 검토 — research.md](specs/001-rps-game/research.md): 기술 선택과 대안
 - [데이터 모델 — data-model.md](specs/001-rps-game/data-model.md): 게임 상태와 저장 데이터
 - [UI 계약](specs/001-rps-game/contracts/ui-contract.md) · [저장소 계약](specs/001-rps-game/contracts/storage-contract.md)
+- [UI 디자인 레퍼런스 — rps-ui-reference.html](docs/references/rps-ui-reference.html): 화면 레이아웃·색상·간격·타이포그래피를 표현한 **디자인 참고용 정적 HTML/CSS 목업**입니다. 구현용 소스가 아니며 애플리케이션 코드에서 import하거나 `src/`·`public/`으로 복사하지 않습니다. 버튼은 동작하지 않고 라운드 번호와 전적은 예시 값이며, 실제 동작과 접근성은 Spec·UI 계약을 따릅니다.
 
 ## 🚦 진행 현황
 

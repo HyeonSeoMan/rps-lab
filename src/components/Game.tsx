@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import GameBoard from "./GameBoard";
+import styles from "./Game.module.css";
 
 const subscribeNoop = () => () => {};
 
@@ -19,9 +20,9 @@ export default function Game({ random }: Props) {
   );
 
   return (
-    <main>
-      <h1>가위바위보</h1>
-      {ready ? <GameBoard random={random} /> : <div aria-busy="true" />}
+    <main className={styles.game}>
+      <h1 className={styles.title}>가위바위보</h1>
+      {ready ? <GameBoard random={random} /> : <div aria-busy="true" className={styles.skeleton} />}
     </main>
   );
 }

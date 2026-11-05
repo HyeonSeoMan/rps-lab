@@ -135,10 +135,10 @@
 **Goal**: 320px~1280px+ 반응형, 터치 영역 44×44, 키보드 조작.
 **Covers**: FR-009, FR-012 / AC-010, AC-011, AC-012, AC-013(선택 버튼 부분), AC-015(스타일 부분)
 
-- [ ] T018 [US4] `src/components/Game.test.tsx`에 키보드 테스트를 추가한다.
+- [X] T018 [US4] `src/components/Game.test.tsx`에 키보드 테스트를 추가한다.
   - `AC-013`(선택 버튼): Tab으로 "가위" 버튼에 포커스 이동 → Enter로 라운드 진행; Space로도 진행. 세 선택 버튼이 모두 네이티브 `button` role.
   - 완료 기준: 통과(네이티브 `<button>` 사용으로 구현 변경 없이 통과해야 함). 실패 시 `GameBoard.tsx` 수정.
-- [ ] T019 [US4] `src/components/Game.module.css`를 작성하고 `Game.tsx`/`GameBoard.tsx`에 클래스를 적용한다 — 모바일 우선 스타일 + `@media (min-width: …)` 보강. 선택 버튼·초기화 버튼 공통 클래스에 `min-width: 44px; min-height: 44px`. 좁은 화면에서 버튼 줄바꿈, 전적 숫자가 커져도(세 자릿수 이상) 줄바꿈/축소로 수용(`min-width: 0`, `overflow-wrap` 등), 가로 스크롤 유발 고정 폭 금지. skeleton 컨테이너에 게임 화면과 비슷한 `min-height`를 주어 전환 시 레이아웃 이동을 줄인다(Plan P-6). 초기화 버튼은 T022에서 같은 클래스를 사용한다.
+- [X] T019 [US4] `src/components/Game.module.css`를 작성하고 `Game.tsx`/`GameBoard.tsx`에 클래스를 적용한다 — 모바일 우선 스타일 + `@media (min-width: …)` 보강. 선택 버튼·초기화 버튼 공통 클래스에 `min-width: 44px; min-height: 44px`. 좁은 화면에서 버튼 줄바꿈, 전적 숫자가 커져도(세 자릿수 이상) 줄바꿈/축소로 수용(`min-width: 0`, `overflow-wrap` 등), 가로 스크롤 유발 고정 폭 금지. skeleton 컨테이너에 게임 화면과 비슷한 `min-height`를 주어 전환 시 레이아웃 이동을 줄인다(Plan P-6). 초기화 버튼은 T022에서 같은 클래스를 사용한다.
   - 완료 기준: CSS에 `44px` 최소 크기 규칙이 존재(`grep -n "44px" src/components/Game.module.css`). `npm run build` 성공. 실제 레이아웃·측정 검증은 T025(수동, AC-010~012, AC-015).
 
 **검토 지점 6**: 변경 파일 보고.
