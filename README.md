@@ -10,6 +10,8 @@ RPS Lab은 가위바위보 웹 게임을 만들면서 **Spec-Driven Development(
 
 빠르게 코드를 만드는 것보다 **요구사항을 정의하고, 설계를 검토하고, 결과를 검증하는 과정**에 집중했습니다.
 
+### 🔗 [**라이브 데모 — hyeonseoman.github.io/rps-lab**](https://hyeonseoman.github.io/rps-lab/)
+
 [게임 기능](#-게임-기능) · [개발 방식](#-개발-방식) · [검증 현황](#-검증-현황) · [로컬 실행](#-로컬-실행) · [배포](#-배포-github-pages)
 
 </div>
@@ -121,7 +123,7 @@ UI는 처음에 **정적 HTML/CSS 레퍼런스**로 구성했습니다. 이후 *
 
 ## 🧪 검증 현황
 
-**2026-11-05, 배포 전 로컬 검증 기준**
+**로컬 검증은 2026-11-05 기준, 배포 확인은 2026-11-06 기준**
 
 | 항목 | 상태 |
 | --- | --- |
@@ -130,7 +132,8 @@ UI는 처음에 **정적 HTML/CSS 레퍼런스**로 구성했습니다. 이후 *
 | 자동 테스트 | **277개 / 16개 파일 통과** |
 | Next.js 빌드 · Pages 정적 빌드 | 통과 |
 | Chrome headless 자동 검증 | 주요 화면·상태·저장·키보드 흐름 확인 |
-| GitHub Pages 실제 배포 검증 | **미완료** |
+| GitHub Pages 배포 | **성공** — [라이브 사이트](https://hyeonseoman.github.io/rps-lab/)와 `/history/` 모두 HTTP 200 응답 확인 |
+| 배포 후 상세 검증(Quickstart D-02~D-12, 롤백 리허설) | **미완료** |
 | Safari·Firefox·실기기·스크린리더 검증 | **미완료** |
 
 마지막 두 작업은 [T040(브라우저·보조기술 수동 검증)](specs/002-rps-simulation-stats/tasks.md)과 [T042(실제 배포 후 검증)](specs/002-rps-simulation-stats/tasks.md)입니다.
@@ -148,8 +151,8 @@ npm install
 npm run dev
 ```
 
-- 게임: `http://localhost:3000/`
-- 기록·통계: `http://localhost:3000/history/`
+- 게임: `http://localhost:3000/` (배포: https://hyeonseoman.github.io/rps-lab/)
+- 기록·통계: `http://localhost:3000/history/` (배포: https://hyeonseoman.github.io/rps-lab/history/)
 
 품질 검사 및 정적 배포 빌드:
 
@@ -167,14 +170,19 @@ npm run preview:pages
 
 ## 🚀 배포 (GitHub Pages)
 
-무료 GitHub Pages를 사용하도록 구성했습니다. **배포 설정 파일과 로컬 정적 빌드는 준비됐지만, 이 문서 작성 시점에는 실제 사이트 배포 성공을 확인하지 않았습니다.**
+무료 GitHub Pages로 배포했습니다. **배포에 성공했으며 아래 주소에서 바로 플레이할 수 있습니다.**
+
+**🌐 배포 주소:** https://hyeonseoman.github.io/rps-lab/
+
+- 게임: https://hyeonseoman.github.io/rps-lab/
+- 기록·통계: https://hyeonseoman.github.io/rps-lab/history/
+
+배포 절차는 다음과 같습니다.
 
 1. 저장소 **Settings → Pages → Build and deployment → Source**를 **GitHub Actions**로 설정합니다.
 2. `master`에 Push하면 [deploy-pages.yml](.github/workflows/deploy-pages.yml)이 타입 검사·린트·테스트·정적 빌드를 실행한 후 Pages 배포를 시도합니다.
 3. [Actions](https://github.com/HyeonSeoMan/rps-lab/actions)에서 성공 여부를 확인합니다.
-4. 배포 후 실제 주소에서 게임과 기록 페이지 직접 진입·새로고침을 확인하고 [Quickstart 7절](specs/002-rps-simulation-stats/quickstart.md)의 D-02~D-12 및 롤백 절차를 검증합니다.
-
-**예상 주소:** `https://hyeonseoman.github.io/rps-lab/` (첫 배포 후 확인 필요)
+4. 배포 후 실제 주소에서 게임과 기록 페이지 직접 진입·새로고침을 확인하고 [Quickstart 7절](specs/002-rps-simulation-stats/quickstart.md)의 D-02~D-12 및 롤백 절차를 검증합니다. (두 페이지의 응답은 확인했으며, 나머지 상세 항목은 아직 수행하지 않았습니다.)
 
 배포 빌드에서만 `basePath`를 `/rps-lab`으로 적용하며 `trailingSlash`를 사용합니다. 저장소 이름을 변경하면 `build:pages`와 배포 경로도 함께 수정해야 합니다.
 
